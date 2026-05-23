@@ -3,6 +3,10 @@ Streamlit dashboard — real-time orderflow visualization.
 Run: streamlit run dashboard/app.py
 """
 
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import asyncio
 import time
 from datetime import datetime
