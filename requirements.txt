@@ -1,5 +1,4 @@
-aiohttp>=3.9.0
-websockets>=12.0
+yfinance>=0.2.40
 streamlit>=1.35.0
 plotly>=5.20.0
 numpy>=1.26.0
@@ -7,4 +6,7 @@ pandas>=2.2.0
 pyyaml>=6.0.1
 requests>=2.31.0
 certifi>=2024.2.2
+# local-only (exchange streaming)
+aiohttp>=3.9.0
+websockets>=12.0
 truststore>=0.9.1
