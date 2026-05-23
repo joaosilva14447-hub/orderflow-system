@@ -7,15 +7,20 @@ import json
 import time
 from typing import AsyncGenerator, Optional
 
+import certifi
 import requests
 import aiohttp
 import websockets
 
+from core.ssl_fix import apply as _ssl_fix; _ssl_fix()
 from core.models import Bar, Market, OrderBook, OrderBookLevel, Side, Trade
 from providers.base import BaseProvider
 
-WS_BASE   = "wss://stream.binance.com:9443/ws"
-REST_BASE = "https://api.binance.com/api/v3"
+WS_BASE       = "wss://stream.binance.com:9443/ws"
+REST_ENDPOINTS = [
+    "https://api.binance.com/api/v3",   # global
+    "https://api.binance.us/api/v3",    # US fallback
+]
 
 TF_MAP = {
     "1m": "1m", "3m": "3m", "5m": "5m", "15m": "15m",
@@ -69,13 +74,18 @@ class BinanceProvider(BaseProvider):
         if end:
             params["endTime"] = int(end)
 
-        resp = requests.get(f"{REST_BASE}/klines", params=params, timeout=10)
-        data = resp.json()
+        last_error = "No endpoints reachable"
+        for base in REST_ENDPOINTS:
+            try:
+                resp = requests.get(f"{base}/klines", params=params, timeout=10, verify=certifi.where())
+                data = resp.json()
+                if isinstance(data, list):
+                    return _parse_klines(data, symbol, timeframe)
+                last_error = data.get("msg", str(data))
+            except Exception as e:
+                last_error = str(e)
 
-        if isinstance(data, dict):
-            raise ValueError(f"Binance API error: {data.get('msg', data)}")
-
-        return _parse_klines(data, symbol, timeframe)
+        raise ValueError(f"Binance API error: {last_error}")
 
     # ── Async (used by live streaming) ────────────────────────────────────
     async def fetch_bars(

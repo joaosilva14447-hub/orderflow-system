@@ -18,6 +18,7 @@ import yaml
 from core.engine import OrderFlowEngine
 from core.models import Market
 from providers.binance import BinanceProvider
+from providers.bybit import BybitProvider
 from providers.yahoo import YahooProvider
 
 st.set_page_config(
@@ -33,13 +34,13 @@ with open("config/settings.yaml") as f:
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.title("OrderFlow System")
 
-provider_name = st.sidebar.selectbox("Provider", ["Binance", "Yahoo"])
+provider_name = st.sidebar.selectbox("Provider", ["Bybit", "Binance", "Yahoo"])
 timeframe = st.sidebar.selectbox(
     "Timeframe", ["1m", "5m", "15m", "30m", "1h", "4h", "1d"],
     index=1,
 )
 
-if provider_name == "Binance":
+if provider_name in ("Binance", "Bybit"):
     symbols = CFG["watchlist"]["crypto"]
 else:
     symbols = CFG["watchlist"]["stocks"] + CFG["watchlist"]["futures"]
@@ -57,10 +58,13 @@ if auto_refresh:
 # ── Data fetch ────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=60, show_spinner=False)
 def fetch_bars(provider_name, symbol, timeframe, limit):
-    if provider_name == "Binance":
-        provider = BinanceProvider()
-        return provider.fetch_bars_sync(symbol, timeframe, limit)
+    if provider_name == "Bybit":
+        return BybitProvider().fetch_bars_sync(symbol, timeframe, limit)
 
+    if provider_name == "Binance":
+        return BinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+
+    # Yahoo — sync via requests internally
     provider = YahooProvider()
     loop = asyncio.new_event_loop()
     try:
