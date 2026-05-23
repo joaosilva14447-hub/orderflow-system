@@ -59,12 +59,14 @@ if auto_refresh:
 def fetch_bars(provider_name, symbol, timeframe, limit):
     if provider_name == "Binance":
         provider = BinanceProvider()
-    else:
-        provider = YahooProvider()
+        return provider.fetch_bars_sync(symbol, timeframe, limit)
 
+    provider = YahooProvider()
     loop = asyncio.new_event_loop()
-    bars = loop.run_until_complete(provider.fetch_bars(symbol, timeframe, limit))
-    loop.close()
+    try:
+        bars = loop.run_until_complete(provider.fetch_bars(symbol, timeframe, limit))
+    finally:
+        loop.close()
     return bars
 
 
