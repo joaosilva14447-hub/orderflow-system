@@ -1,0 +1,41 @@
+providers:
+  binance:
+    enabled: true
+    api_key: ""
+    secret_key: ""
+  alpaca:
+    enabled: false
+    api_key: ""
+    secret_key: ""
+  yahoo:
+    enabled: true
+
+watchlist:
+  crypto:
+    - BTC/USDT
+    - ETH/USDT
+    - SOL/USDT
+  stocks:
+    - SPY
+    - QQQ
+    - AAPL
+  futures:
+    - GC=F    # Gold
+    - CL=F    # Crude Oil
+    - ES=F    # S&P 500 Futures
+
+engine:
+  tick_size_crypto: 0.1
+  tick_size_stocks: 0.01
+  tick_size_futures: 0.25
+  cvd_window: 500
+  imbalance_threshold: 3.0
+  imbalance_levels: 5
+  value_area_pct: 0.70
+
+dashboard:
+  default_symbol: "BTC/USDT"
+  default_provider: "binance"
+  default_timeframe: "5m"
+  bar_limit: 300
+  refresh_ms: 500
