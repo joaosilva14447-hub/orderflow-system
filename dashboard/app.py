@@ -1,5 +1,6 @@
 """
-OrderFlow System — Streamlit Dashboard v2
+OrderFlow System — Streamlit Dashboard v3
+Tier 1: Signal Engine + Backtesting (Sharpe, Sortino, Omega, Kelly, Walk-Forward)
 Tier 2: VWAP+SD, Session POC, Multi-TF CVD, Heatmap
 """
 
@@ -18,7 +19,12 @@ from core.sessions  import calculate_sessions, get_current_sessions, SESSION_LIN
 from core.footprint import build_footprints
 from core.heatmap   import heatmap_from_bars
 from core.mtf       import calculate_mtf_cvd, confluence_score
+from core.signals   import SignalEngine
+from core.backtest  import BacktestEngine, walk_forward
 from dashboard.footprint_chart import render_footprint, render_footprint_summary
+from dashboard.backtest_page   import (render_equity_curve, render_metrics_table,
+                                        render_trades_scatter, render_signal_breakdown,
+                                        render_walk_forward)
 from providers.yfinance_provider import YFinanceProvider
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -62,6 +68,14 @@ fp_bars       = st.sidebar.slider("Footprint Bars", 5, 40, 15)
 fp_imb_thresh = st.sidebar.slider("Imbalance Ratio", 1.5, 5.0, 3.0, step=0.5)
 fp_show_nums  = st.sidebar.checkbox("Show Volume Numbers", value=True)
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Backtest**")
+bt_capital    = st.sidebar.number_input("Capital (€)", value=10000, step=1000)
+bt_risk       = st.sidebar.slider("Risk per Trade %", 0.5, 5.0, 1.0, step=0.5) / 100
+bt_rr         = st.sidebar.slider("R:R Ratio", 1.0, 4.0, 2.0, step=0.5)
+bt_sl_mult    = st.sidebar.slider("SL ATR Multiplier", 1.0, 3.0, 1.5, step=0.25)
+bt_is_pct     = st.sidebar.slider("Walk-Forward IS %", 0.5, 0.85, 0.70, step=0.05)
+
 auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
 
 # ── Data fetch ────────────────────────────────────────────────────────────────
@@ -99,9 +113,19 @@ sessions  = calculate_sessions(bars, tick_size)
 cur_sess  = get_current_sessions(sessions)
 heatmap   = heatmap_from_bars(bars, tick_size)
 
+# Pre-compute signals (used by both OrderFlow tab markers + Backtest tab)
+@st.cache_data(ttl=120, show_spinner=False)
+def compute_signals(symbol, timeframe, limit, tick_size, rr, sl_mult):
+    from providers.yfinance_provider import YFinanceProvider
+    b = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+    eng = SignalEngine(tick_size=tick_size, rr_ratio=rr, sl_atr_mult=sl_mult)
+    return b, eng.detect(b)
+
+sig_bars, signals = compute_signals(symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult)
+
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab_main, tab_fp, tab_heatmap, tab_mtf = st.tabs([
-    "📊 OrderFlow", "🔬 Footprint", "🌡️ Heatmap", "📐 Multi-TF CVD"
+tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
+    "📊 OrderFlow", "🔬 Footprint", "🌡️ Heatmap", "📐 Multi-TF CVD", "⚡ Backtest"
 ])
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -356,6 +380,117 @@ with tab_mtf:
                 arrow = "🟢" if snap.direction == "bullish" else "🔴" if snap.direction == "bearish" else "⚪"
                 st.metric(snap.timeframe, f"{snap.cvd:+,.0f}", delta=snap.direction)
                 st.caption(f"{arrow} {snap.bars_used} bars")
+
+# ════════════════════════════════════════════════════════════════════════════════
+# TAB 5 — Backtest
+# ════════════════════════════════════════════════════════════════════════════════
+with tab_bt:
+    st.markdown(f"### Signal Engine + Backtest — {symbol} · {timeframe}")
+
+    if not signals:
+        st.warning("Not enough bars for signal detection. Increase Bars slider or switch to 1h/4h timeframe.")
+    else:
+        st.info(f"**{len(signals)} signals detected** across {bar_limit} bars.")
+
+        # ── Walk-Forward ──────────────────────────────────────────────────────
+        with st.spinner("Running walk-forward validation…"):
+            wf = walk_forward(
+                sig_bars, signals,
+                is_pct     = bt_is_pct,
+                engine_cfg = dict(
+                    initial_capital   = bt_capital,
+                    risk_per_trade    = bt_risk,
+                    max_bars_in_trade = 20,
+                ),
+            )
+
+        # Edge verdict
+        edge_color = "#26a69a" if wf.has_edge else "#ef5350"
+        edge_label = "✅ EDGE CONFIRMED" if wf.has_edge else "❌ NO EDGE — DO NOT TRADE LIVE"
+        st.markdown(
+            f"<div style='background:{edge_color};padding:14px;border-radius:8px;"
+            f"text-align:center;font-size:1.4em;font-weight:bold;color:white'>"
+            f"{edge_label} &nbsp;|&nbsp; OOS/IS Sharpe degradation: {wf.degradation:.2f}"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+
+        # ── IS vs OOS side by side ────────────────────────────────────────────
+        col_is, col_oos = st.columns(2)
+
+        with col_is:
+            st.markdown(f"#### In-Sample ({int(bt_is_pct*100)}%)")
+            is_r = wf.is_result.report
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Trades",       str(is_r.get('n_trades', 0)))
+            m2.metric("Win Rate",     f"{is_r.get('win_rate',0)*100:.1f}%")
+            m3.metric("Sharpe",       f"{is_r.get('sharpe',0):.2f}")
+            m4.metric("PnL",          f"€{is_r.get('total_pnl',0):,.0f}")
+            st.plotly_chart(render_equity_curve(wf.is_result, "IS Equity"),
+                            use_container_width=True)
+
+        with col_oos:
+            st.markdown(f"#### Out-of-Sample ({int((1-bt_is_pct)*100)}%)")
+            oos_r = wf.oos_result.report
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Trades",       str(oos_r.get('n_trades', 0)))
+            m2.metric("Win Rate",     f"{oos_r.get('win_rate',0)*100:.1f}%")
+            m3.metric("Sharpe",       f"{oos_r.get('sharpe',0):.2f}")
+            m4.metric("PnL",          f"€{oos_r.get('total_pnl',0):,.0f}")
+            st.plotly_chart(render_equity_curve(wf.oos_result, "OOS Equity"),
+                            use_container_width=True)
+
+        st.markdown("---")
+
+        # ── Full metrics table (OOS) ──────────────────────────────────────────
+        st.markdown("#### Full Performance Report — Out-of-Sample")
+        col_met, col_eq = st.columns([1, 1.5])
+        with col_met:
+            st.plotly_chart(render_metrics_table(wf.oos_result.report),
+                            use_container_width=True)
+        with col_eq:
+            st.plotly_chart(render_walk_forward(wf), use_container_width=True)
+            st.markdown("##### Kelly Position Sizing")
+            k_full = wf.oos_result.report.get("kelly_full", 0)
+            k_half = wf.oos_result.report.get("kelly_half", 0)
+            kc1, kc2 = st.columns(2)
+            kc1.metric("Full Kelly", f"{k_full*100:.1f}% of capital",
+                        help="Maximum theoretical bet size — aggressive")
+            kc2.metric("Half Kelly", f"{k_half*100:.1f}% of capital",
+                        help="Recommended: half Kelly reduces ruin probability")
+
+        st.markdown("---")
+
+        # ── Signal breakdown ──────────────────────────────────────────────────
+        st.markdown("#### Performance by Signal Type")
+        st.plotly_chart(render_signal_breakdown(wf.oos_result),
+                        use_container_width=True)
+
+        # ── Trade scatter ─────────────────────────────────────────────────────
+        st.markdown("#### Individual Trades — OOS")
+        st.plotly_chart(render_trades_scatter(wf.oos_result, sig_bars),
+                        use_container_width=True)
+
+        # ── Trade log table ───────────────────────────────────────────────────
+        if wf.oos_result.trades:
+            st.markdown("#### Trade Log")
+            import pandas as pd
+            from datetime import datetime
+            rows = []
+            for t in wf.oos_result.trades:
+                rows.append({
+                    "Time":    datetime.fromtimestamp(t.signal.timestamp/1000).strftime("%Y-%m-%d %H:%M"),
+                    "Signal":  t.signal.signal_type,
+                    "Dir":     t.signal.direction.upper(),
+                    "Entry":   f"{t.entry_price:,.2f}",
+                    "Exit":    f"{t.exit_price:,.2f}",
+                    "Reason":  t.exit_reason.upper(),
+                    "PnL (€)": f"{t.pnl:+,.2f}",
+                    "R":       f"{t.r_multiple:+.2f}",
+                })
+            df = pd.DataFrame(rows)
+            st.dataframe(df, use_container_width=True, height=300)
 
 if auto_ref:
     import time; time.sleep(60); st.rerun()
