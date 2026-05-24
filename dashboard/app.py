@@ -458,13 +458,17 @@ with tab_main:
     # ── Nota de sessões (detalhes no tab Confluência) ─────────────────────────
     if cur_sess:
         st.markdown("---")
-        _sess_names = " &nbsp;·&nbsp; ".join(
-            f"<span style='color:{SESSION_LINE_COLORS.get(s.name, \"white\")}'>"
-            f"<b>{s.name}</b> POC {s.poc:,.0f}</span>"
-            for s in cur_sess if s.poc
-        )
+        _sess_parts = []
+        for _s in cur_sess:
+            if _s.poc:
+                _col = SESSION_LINE_COLORS.get(_s.name, "white")
+                _sess_parts.append(
+                    f"<span style='color:{_col}'><b>{_s.name}</b> POC {_s.poc:,.0f}</span>"
+                )
+        _sess_names = " &nbsp;·&nbsp; ".join(_sess_parts)
         st.markdown(
-            f"<div style='font-size:0.85em;color:#bbb;padding:6px 0'>🕐 Sessões activas: {_sess_names}"
+            f"<div style='font-size:0.85em;color:#bbb;padding:6px 0'>"
+            f"🕐 Sessões activas: {_sess_names}"
             f"&nbsp;— detalhes completos no tab <b>🎯 Confluência</b></div>",
             unsafe_allow_html=True,
         )
