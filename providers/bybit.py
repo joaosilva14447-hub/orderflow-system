@@ -2,6 +2,12 @@
 Bybit provider — globally accessible, no geo-restrictions.
 Supports Spot, Linear Perpetuals, Inverse Futures.
 No API key required for public market data.
+
+Delta quality levels (best → approximated):
+  WebSocket (LiveFeed)  → exact aggressor side per trade  ✅✅✅
+  REST recent-trade     → real side for bars in last 1000 trades  ✅✅
+  close-position approx → (close-low)/(high-low) weighting  ✅
+  flat 50/50 split      → old approach, now replaced  ❌
 """
 
 import json
@@ -25,7 +31,15 @@ TF_MAP = {
     "30m": "30","1h": "60",  "4h": "240","1d": "D",
 }
 
-# Symbol → category mapping heuristic
+TF_MS = {
+    "1m": 60_000,       "3m": 180_000,    "5m": 300_000,
+    "15m": 900_000,     "30m": 1_800_000, "1h": 3_600_000,
+    "4h": 14_400_000,   "1d": 86_400_000,
+}
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
 def _category(symbol: str) -> str:
     sym = symbol.replace("/", "").upper()
     if sym.endswith("USDT") or sym.endswith("USDC"):
@@ -35,78 +49,217 @@ def _category(symbol: str) -> str:
     return "spot"
 
 
+def _buy_vol_approx(high: float, low: float, close: float, volume: float) -> float:
+    """
+    Close-position approximation for taker buy volume.
+    If close is near the high → strong buy pressure → buy_vol ≈ volume.
+    If close is near the low  → strong sell pressure → buy_vol ≈ 0.
+    Far more accurate than a flat 50/50 split.
+    """
+    rng = high - low
+    if rng < 1e-10:
+        return volume * 0.5
+    return volume * (close - low) / rng
+
+
 def _parse_klines(raw: list, symbol: str, timeframe: str) -> list[Bar]:
     """
-    Bybit returns: [startTime, openPrice, highPrice, lowPrice, closePrice, volume, turnover]
-    Data is newest-first → reverse.
+    Bybit kline format: [startTime, open, high, low, close, volume, turnover]
+    Data arrives newest-first → reversed for chronological order.
+    Buy/sell split: close-position approximation (replaces old 50/50).
     """
     bars = []
     for k in reversed(raw):
         if not isinstance(k, list) or len(k) < 6:
             continue
+        o   = float(k[1])
+        h   = float(k[2])
+        lo  = float(k[3])
+        c   = float(k[4])
         vol = float(k[5])
+        bv  = _buy_vol_approx(h, lo, c, vol)
         bars.append(Bar(
             timestamp   = float(k[0]),
-            open        = float(k[1]),
-            high        = float(k[2]),
-            low         = float(k[3]),
-            close       = float(k[4]),
+            open        = o,
+            high        = h,
+            low         = lo,
+            close       = c,
             volume      = vol,
             symbol      = symbol,
             market      = Market.CRYPTO,
             timeframe   = timeframe,
-            buy_volume  = vol * 0.5,   # Bybit klines have no taker split — approximated
-            sell_volume = vol * 0.5,
+            buy_volume  = bv,
+            sell_volume = vol - bv,
         ))
     return bars
 
+
+def _overlay_trades(bars: list[Bar], trades: list[Trade], tf_ms: int) -> list[Bar]:
+    """
+    Replace close-position approximation with real aggressor-side volumes
+    for bars that have sufficient trade coverage (≥ 50% of bar volume).
+    """
+    if not trades or not bars:
+        return bars
+
+    # Accumulate buy/sell per bar-start timestamp
+    bar_data: dict[int, dict] = {}
+    for t in trades:
+        bs = int(t.timestamp // tf_ms) * tf_ms
+        if bs not in bar_data:
+            bar_data[bs] = {"buy": 0.0, "sell": 0.0}
+        if t.side == Side.BUY:
+            bar_data[bs]["buy"]  += t.volume
+        else:
+            bar_data[bs]["sell"] += t.volume
+
+    # Build lookup by timestamp
+    bar_map = {int(b.timestamp): i for i, b in enumerate(bars)}
+
+    result = list(bars)
+    for bs, data in bar_data.items():
+        idx = bar_map.get(bs)
+        if idx is None:
+            continue
+        b         = bars[idx]
+        trade_vol = data["buy"] + data["sell"]
+        if trade_vol <= 0:
+            continue
+        # Only replace if trades cover ≥ 50% of the bar's known volume
+        coverage = trade_vol / b.volume if b.volume > 0 else 0.0
+        if coverage >= 0.5:
+            # Scale to match the kline volume exactly
+            scale = b.volume / trade_vol
+            result[idx] = Bar(
+                timestamp   = b.timestamp,
+                open        = b.open,
+                high        = b.high,
+                low         = b.low,
+                close       = b.close,
+                volume      = b.volume,
+                symbol      = b.symbol,
+                market      = b.market,
+                timeframe   = b.timeframe,
+                buy_volume  = data["buy"]  * scale,
+                sell_volume = data["sell"] * scale,
+            )
+    return result
+
+
+# ── Provider ──────────────────────────────────────────────────────────────────
 
 class BybitProvider(BaseProvider):
 
     def normalize_symbol(self, symbol: str) -> str:
         return symbol.replace("/", "").upper()
 
-    # ── Sync ──────────────────────────────────────────────────────────────
+    # ── Recent trades (real side data) ────────────────────────────────────────
+
+    def _fetch_recent_trades_sync(self, symbol: str, limit: int = 1000) -> list[Trade]:
+        """
+        Fetch up to 1000 recent executed trades with real aggressor side.
+        Used to overlay accurate buy/sell on the most recent kline bars.
+        """
+        sym      = self.normalize_symbol(symbol)
+        category = _category(symbol)
+        params   = {"category": category, "symbol": sym, "limit": min(limit, 1000)}
+        try:
+            resp = requests.get(
+                f"{REST_BASE}/recent-trade", params=params,
+                timeout=8, verify=certifi.where(),
+            )
+            data = resp.json()
+            if data.get("retCode", -1) != 0:
+                return []
+            trades = []
+            for t in data["result"]["list"]:
+                trades.append(Trade(
+                    timestamp = float(t["time"]),
+                    price     = float(t["price"]),
+                    volume    = float(t["size"]),
+                    side      = Side.BUY if t["side"] == "Buy" else Side.SELL,
+                    symbol    = symbol,
+                    market    = Market.CRYPTO,
+                    exchange  = "bybit",
+                ))
+            return trades
+        except Exception:
+            return []
+
+    # ── Sync REST ─────────────────────────────────────────────────────────────
+
     def fetch_bars_sync(
         self,
-        symbol: str,
+        symbol:    str,
         timeframe: str,
-        limit: int = 500,
-        start: Optional[float] = None,
-        end: Optional[float] = None,
+        limit:     int = 500,
+        start:     Optional[float] = None,
+        end:       Optional[float] = None,
     ) -> list[Bar]:
+        """Kline bars with close-position approximated buy/sell."""
         sym      = self.normalize_symbol(symbol)
-        tf       = TF_MAP.get(timeframe, "5")
+        tf       = TF_MAP.get(timeframe, "60")
         category = _category(symbol)
-        params   = {"category": category, "symbol": sym, "interval": tf, "limit": min(limit, 1000)}
+        params   = {
+            "category": category, "symbol": sym,
+            "interval": tf, "limit": min(limit, 1000),
+        }
         if start:
             params["start"] = int(start)
         if end:
             params["end"] = int(end)
 
-        resp = requests.get(f"{REST_BASE}/kline", params=params, timeout=10, verify=certifi.where())
+        resp = requests.get(
+            f"{REST_BASE}/kline", params=params,
+            timeout=10, verify=certifi.where(),
+        )
         data = resp.json()
-
         if data.get("retCode", -1) != 0:
             raise ValueError(f"Bybit API error: {data.get('retMsg', data)}")
 
-        raw = data["result"]["list"]
-        return _parse_klines(raw, symbol, timeframe)
+        return _parse_klines(data["result"]["list"], symbol, timeframe)
 
-    # ── Async ─────────────────────────────────────────────────────────────
+    def fetch_bars_enriched(
+        self,
+        symbol:    str,
+        timeframe: str,
+        limit:     int = 500,
+    ) -> tuple[list[Bar], int]:
+        """
+        Best-effort delta quality:
+          • All bars  → close-position approximation
+          • Recent bars (covered by last 1000 trades) → real aggressor-side volumes
+
+        Returns (bars, n_enriched) where n_enriched = bars with real trade data.
+        """
+        bars   = self.fetch_bars_sync(symbol, timeframe, limit)
+        tf_ms  = TF_MS.get(timeframe, 60_000)
+        trades = self._fetch_recent_trades_sync(symbol, limit=1000)
+
+        before = [b.buy_volume for b in bars]
+        bars   = _overlay_trades(bars, trades, tf_ms)
+        after  = [b.buy_volume for b in bars]
+
+        n_enriched = sum(1 for a, b in zip(before, after) if abs(a - b) > 0.001)
+        return bars, n_enriched
+
+    # ── Async REST ────────────────────────────────────────────────────────────
+
     async def fetch_bars(
         self,
-        symbol: str,
+        symbol:    str,
         timeframe: str,
-        limit: int = 500,
-        start: Optional[float] = None,
-        end: Optional[float] = None,
+        limit:     int = 500,
+        start:     Optional[float] = None,
+        end:       Optional[float] = None,
     ) -> list[Bar]:
         sym      = self.normalize_symbol(symbol)
-        tf       = TF_MAP.get(timeframe, "5")
+        tf       = TF_MAP.get(timeframe, "60")
         category = _category(symbol)
-        params   = {"category": category, "symbol": sym, "interval": tf, "limit": min(limit, 1000)}
-
+        params   = {
+            "category": category, "symbol": sym,
+            "interval": tf, "limit": min(limit, 1000),
+        }
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{REST_BASE}/kline", params=params) as resp:
                 data = await resp.json()
@@ -116,15 +269,17 @@ class BybitProvider(BaseProvider):
 
         return _parse_klines(data["result"]["list"], symbol, timeframe)
 
+    # ── WebSocket streams ─────────────────────────────────────────────────────
+
     async def stream_trades(self, symbol: str) -> AsyncGenerator[Trade, None]:
         sym      = self.normalize_symbol(symbol)
         category = _category(symbol)
         url      = f"{WS_BASE}/{category}"
 
-        async with websockets.connect(url) as ws:
+        async with websockets.connect(url, ping_interval=20) as ws:
             await ws.send(json.dumps({
                 "op": "subscribe",
-                "args": [f"publicTrade.{sym}"]
+                "args": [f"publicTrade.{sym}"],
             }))
             async for raw in ws:
                 msg = json.loads(raw)
@@ -145,10 +300,10 @@ class BybitProvider(BaseProvider):
         category = _category(symbol)
         url      = f"{WS_BASE}/{category}"
 
-        async with websockets.connect(url) as ws:
+        async with websockets.connect(url, ping_interval=20) as ws:
             await ws.send(json.dumps({
                 "op": "subscribe",
-                "args": [f"orderbook.{depth}.{sym}"]
+                "args": [f"orderbook.{depth}.{sym}"],
             }))
             async for raw in ws:
                 msg = json.loads(raw)

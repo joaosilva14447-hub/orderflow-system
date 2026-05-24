@@ -1,12 +1,14 @@
 """
-OrderFlow System — Streamlit Dashboard v3
+OrderFlow System — Streamlit Dashboard v4
 Tier 1: Signal Engine + Backtesting (Sharpe, Sortino, Omega, Kelly, Walk-Forward)
 Tier 2: VWAP+SD, Session POC, Multi-TF CVD, Heatmap
+Tier 3: Bybit live WebSocket feed — real buy/sell volumes, zero approximation
 """
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import time
 from datetime import datetime
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -52,6 +54,39 @@ bar_limit     = st.sidebar.slider("Bars", 50, 500, 200)
 tick_size     = st.sidebar.number_input("Tick Size", value=10.0, min_value=0.0001, format="%.4f")
 va_pct        = st.sidebar.slider("Value Area %", 0.5, 0.9, 0.70)
 
+# ── Data source ───────────────────────────────────────────────────────────────
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Data Source**")
+
+_is_crypto = (market_choice == "Crypto")
+_provider_opts = (
+    ["Yahoo Finance", "Bybit — REST (enriched)", "Bybit — Live WebSocket"]
+    if _is_crypto else ["Yahoo Finance"]
+)
+provider_choice = st.sidebar.radio(
+    "Provider",
+    _provider_opts,
+    index=0,
+    help=(
+        "**Yahoo Finance**: works everywhere, buy/sell approximated.\n\n"
+        "**Bybit REST**: local only — real data, close-position delta + recent-trade overlay.\n\n"
+        "**Bybit Live**: local only — exact buy/sell from WebSocket trades in real-time."
+    ),
+)
+
+_bybit_live = (provider_choice == "Bybit — Live WebSocket")
+_bybit_rest = (provider_choice == "Bybit — REST (enriched)")
+_use_bybit  = _bybit_live or _bybit_rest
+
+if _use_bybit:
+    st.sidebar.caption("⚠️ Bybit requires local network — geo-blocked on Streamlit Cloud.")
+
+live_refresh_s = 5
+if _bybit_live:
+    live_refresh_s = st.sidebar.select_slider(
+        "Live refresh (seconds)", options=[3, 5, 10, 15, 30], value=5
+    )
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("**VWAP**")
 show_vwap  = st.sidebar.checkbox("Show VWAP", value=True)
@@ -76,22 +111,87 @@ bt_rr         = st.sidebar.slider("R:R Ratio", 1.0, 4.0, 2.0, step=0.5)
 bt_sl_mult    = st.sidebar.slider("SL ATR Multiplier", 1.0, 3.0, 1.5, step=0.25)
 bt_is_pct     = st.sidebar.slider("Walk-Forward IS %", 0.5, 0.85, 0.70, step=0.05)
 
-auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
+if not _bybit_live:
+    auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
+else:
+    auto_ref = False   # live mode manages its own refresh cycle
+
+# ── Live feed (Bybit WebSocket, one instance per symbol+timeframe) ────────────
+@st.cache_resource
+def _get_live_feed(symbol: str, timeframe: str):
+    """One LiveFeed per (symbol, timeframe), shared across Streamlit reruns."""
+    from providers.live_feed import LiveFeed
+    feed = LiveFeed(symbol, timeframe)
+    return feed   # start() called after seeding
+
 
 # ── Data fetch ────────────────────────────────────────────────────────────────
-@st.cache_data(ttl=60, show_spinner="Loading market data…")
-def load(symbol, timeframe, limit):
-    return YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
 
+@st.cache_data(ttl=60, show_spinner="Fetching Yahoo Finance data…")
+def _load_yahoo(symbol, timeframe, limit):
+    return YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit), 0
+
+@st.cache_data(ttl=30, show_spinner="Fetching Bybit enriched data…")
+def _load_bybit_rest(symbol, timeframe, limit):
+    from providers.bybit import BybitProvider
+    bars, n_enriched = BybitProvider().fetch_bars_enriched(symbol, timeframe, limit)
+    return bars, n_enriched
+
+def _load_bybit_live(symbol, timeframe, limit):
+    """Load historical REST bars + start live feed, merge both."""
+    from providers.bybit import BybitProvider
+    hist_bars, n_enriched = BybitProvider().fetch_bars_enriched(symbol, timeframe, limit)
+
+    feed = _get_live_feed(symbol, timeframe)
+    if not feed._thread or not feed._thread.is_alive():
+        feed.seed(hist_bars)
+        feed.start()
+
+    bars = feed.get_bars(n=limit)
+    if not bars:
+        bars = hist_bars
+    return bars, n_enriched
+
+# Dispatch based on provider choice
+n_enriched = 0
 try:
-    bars = load(symbol, timeframe, bar_limit)
+    if _bybit_live:
+        bars, n_enriched = _load_bybit_live(symbol, timeframe, bar_limit)
+    elif _bybit_rest:
+        bars, n_enriched = _load_bybit_rest(symbol, timeframe, bar_limit)
+    else:
+        bars, n_enriched = _load_yahoo(symbol, timeframe, bar_limit)
 except Exception as e:
-    st.error(f"Data error: {e}")
+    st.error(f"Data error ({provider_choice}): {e}")
+    if _use_bybit:
+        st.info("Tip: Bybit only works locally. On Streamlit Cloud, switch to Yahoo Finance.")
     st.stop()
 
 if not bars:
     st.warning("No data returned.")
     st.stop()
+
+# ── Data quality badge ────────────────────────────────────────────────────────
+if _bybit_live:
+    feed_status = _get_live_feed(symbol, timeframe).status()
+    if feed_status["connected"]:
+        ago = feed_status.get("last_trade_ago")
+        ago_txt = f"{ago}s ago" if ago is not None else "—"
+        st.sidebar.success(
+            f"🔴 **LIVE** · {feed_status['trade_count']:,} trades\n\n"
+            f"Last: {ago_txt} · {feed_status['live_bars']} live bars"
+        )
+    else:
+        err = feed_status.get("error", "")
+        st.sidebar.warning(f"⚡ Connecting…{' — ' + err if err else ''}")
+elif _bybit_rest:
+    quality_label = (
+        f"✅ {n_enriched} bars with real delta" if n_enriched > 0
+        else "📊 Close-position approximation"
+    )
+    st.sidebar.info(quality_label)
+else:
+    st.sidebar.caption("📊 Delta approximated from OHLCV")
 
 # ── Compute all layers ────────────────────────────────────────────────────────
 engine  = OrderFlowEngine(tick_size=tick_size)
@@ -113,15 +213,31 @@ sessions  = calculate_sessions(bars, tick_size)
 cur_sess  = get_current_sessions(sessions)
 heatmap   = heatmap_from_bars(bars, tick_size)
 
-# Pre-compute signals (used by both OrderFlow tab markers + Backtest tab)
+# Pre-compute signals — reuse already-loaded bars so no extra fetch
 @st.cache_data(ttl=120, show_spinner=False)
-def compute_signals(symbol, timeframe, limit, tick_size, rr, sl_mult):
-    from providers.yfinance_provider import YFinanceProvider
-    b = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+def _compute_signals_cached(symbol, timeframe, limit, tick_size, rr, sl_mult, provider):
+    """Cached signal computation keyed by provider so Bybit/Yahoo stay separate."""
+    if provider == "Bybit — REST (enriched)":
+        from providers.bybit import BybitProvider
+        b, _ = BybitProvider().fetch_bars_enriched(symbol, timeframe, limit)
+    elif provider == "Bybit — Live WebSocket":
+        # For signals, use the seeded+live merged bars (already computed above)
+        return None, None   # handled outside cache
+    else:
+        b = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
     eng = SignalEngine(tick_size=tick_size, rr_ratio=rr, sl_atr_mult=sl_mult)
     return b, eng.detect(b)
 
-sig_bars, signals = compute_signals(symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult)
+if _bybit_live:
+    # Use the already-merged bars — no extra fetch needed
+    sig_bars = bars
+    eng_sig  = SignalEngine(tick_size=tick_size, rr_ratio=bt_rr, sl_atr_mult=bt_sl_mult)
+    signals  = eng_sig.detect(sig_bars)
+else:
+    _cached = _compute_signals_cached(
+        symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult, provider_choice
+    )
+    sig_bars, signals = _cached if _cached[0] is not None else (bars, [])
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
@@ -492,5 +608,11 @@ with tab_bt:
             df = pd.DataFrame(rows)
             st.dataframe(df, use_container_width=True, height=300)
 
-if auto_ref:
-    import time; time.sleep(60); st.rerun()
+# ── Auto-refresh ──────────────────────────────────────────────────────────────
+if _bybit_live:
+    # Live mode: short refresh cycle so the open bar updates in near-real-time
+    time.sleep(live_refresh_s)
+    st.rerun()
+elif auto_ref:
+    time.sleep(60)
+    st.rerun()
