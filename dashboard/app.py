@@ -114,9 +114,10 @@ bt_rr         = st.sidebar.slider("R:R Ratio", 1.0, 4.0, 2.0, step=0.5)
 bt_sl_mult    = st.sidebar.slider("SL ATR Multiplier", 1.0, 3.0, 1.5, step=0.25)
 bt_is_pct     = st.sidebar.slider("Walk-Forward IS %", 0.5, 0.85, 0.70, step=0.05)
 bt_history    = st.sidebar.slider(
-    "Backtest History (bars)", 500, 3000, 2000, step=100,
-    help="Bars used for historical backtest only — separate from chart. "
-         "2000 bars 1h ≈ 83 days ≈ ~120–180 trades."
+    "Backtest History (barras)", 200, 2000, 500, step=100,
+    help="Barras para o backtest histórico (separado do gráfico).\n\n"
+         "500 barras 1h ≈ 20 dias ≈ ~30–60 trades. Primeira execução demora ~10-20s.\n\n"
+         "⚠️ Acima de 1000 barras o primeiro cálculo pode demorar 30-60s (fica em cache depois)."
 )
 
 st.sidebar.markdown("---")
@@ -299,21 +300,34 @@ else:
     )
     sig_bars, signals = _cached if _cached[0] is not None else (bars, [])
 
-# ── Historical backtest data (larger dataset — separate from chart) ────────────
+# ── Historical backtest data + signal detection (cached juntos) ───────────────
 @st.cache_data(ttl=300, show_spinner=False)
-def load_bt_history(symbol, timeframe, limit, provider):
+def _load_bt_and_detect(symbol, timeframe, limit, provider,
+                         tick_size, rr, sl_mult,
+                         enabled_signals_tuple=None, min_conf=0.60):
     """
-    Fetch a large historical bar set for the backtest.
-    Separate from the chart data so the chart stays fast.
-    Yahoo Finance returns up to 2 years of 1h data (~17,000 bars).
+    Fetch barras históricas E deteta sinais — tudo numa cache só (ttl=5min).
+    Assim a deteção O(n²) não repete a cada interação na sidebar.
     """
     if "Bybit" in provider:
         from providers.bybit import BybitProvider
         try:
-            return BybitProvider().fetch_bars_paginated(symbol, timeframe, limit)
+            bt_bars = BybitProvider().fetch_bars_paginated(symbol, timeframe, limit)
         except Exception:
-            pass   # fall back to Yahoo Finance
-    return YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+            bt_bars = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+    else:
+        bt_bars = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+
+    _enabled = list(enabled_signals_tuple) if enabled_signals_tuple else None
+    eng = SignalEngine(
+        tick_size       = tick_size,
+        rr_ratio        = rr,
+        sl_atr_mult     = sl_mult,
+        enabled_signals = _enabled,
+        min_confidence  = min_conf,
+    )
+    bt_sigs = eng.detect(bt_bars)
+    return bt_bars, bt_sigs
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
@@ -579,24 +593,21 @@ with tab_mtf:
 with tab_bt:
     st.markdown(f"### Historical Backtest + Walk-Forward — {symbol} · {timeframe}")
 
-    # ── Load large historical dataset (separate from chart) ───────────────────
-    with st.spinner(f"Loading {bt_history} bars of history… (first load may take ~15s)"):
-        bt_bars = load_bt_history(symbol, timeframe, bt_history, provider_choice)
+    # ── Carregar barras + detetar sinais (resultado em cache 5 min) ──────────
+    with st.spinner(
+        f"⏳ A carregar {bt_history} barras e detetar sinais… "
+        f"(primeira vez: ~20-40s · seguintes: instantâneo)"
+    ):
+        bt_bars, bt_sigs = _load_bt_and_detect(
+            symbol, timeframe, bt_history, provider_choice,
+            tick_size, bt_rr, bt_sl_mult,
+            enabled_signals_tuple=_enabled_tuple,
+            min_conf=bt_min_conf,
+        )
 
     if not bt_bars:
-        st.warning("No historical data returned.")
+        st.warning("Sem dados históricos.")
         st.stop()
-
-    # ── Run signals on historical data ────────────────────────────────────────
-    with st.spinner("Detecting signals on historical data…"):
-        _bt_eng  = SignalEngine(
-            tick_size       = tick_size,
-            rr_ratio        = bt_rr,
-            sl_atr_mult     = bt_sl_mult,
-            enabled_signals = list(_enabled_tuple) if _enabled_tuple else None,
-            min_confidence  = bt_min_conf,
-        )
-        bt_sigs  = _bt_eng.detect(bt_bars)
 
     # Date range of the backtest data
     _dt_start = datetime.fromtimestamp(bt_bars[0].timestamp  / 1000).strftime("%Y-%m-%d")
