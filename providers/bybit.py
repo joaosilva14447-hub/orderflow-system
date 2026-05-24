@@ -219,6 +219,34 @@ class BybitProvider(BaseProvider):
 
         return _parse_klines(data["result"]["list"], symbol, timeframe)
 
+    def fetch_bars_paginated(
+        self,
+        symbol:    str,
+        timeframe: str,
+        limit:     int = 1000,
+    ) -> list[Bar]:
+        """
+        Fetch up to `limit` bars by paginating the Bybit kline API.
+        The standard endpoint caps at 200 per call; this loops backwards in time.
+        """
+        tf_ms    = TF_MS.get(timeframe, 60_000)
+        all_bars: list[Bar] = []
+        end_ts:   Optional[float] = None  # ms — walk backwards
+
+        while len(all_bars) < limit:
+            n     = min(200, limit - len(all_bars))
+            batch = self.fetch_bars_sync(symbol, timeframe, limit=n, end=end_ts)
+            if not batch:
+                break
+            # batch is ascending (oldest first after _parse_klines reversal)
+            all_bars = batch + all_bars          # prepend older bars
+            if len(batch) < n:
+                break                            # no more history available
+            # Next page ends just before the oldest bar in this batch
+            end_ts = batch[0].timestamp - tf_ms
+
+        return all_bars[-limit:]
+
     def fetch_bars_enriched(
         self,
         symbol:    str,

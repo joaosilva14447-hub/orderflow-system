@@ -26,7 +26,9 @@ from core.backtest  import BacktestEngine, walk_forward
 from dashboard.footprint_chart import render_footprint, render_footprint_summary
 from dashboard.backtest_page   import (render_equity_curve, render_metrics_table,
                                         render_trades_scatter, render_signal_breakdown,
-                                        render_walk_forward)
+                                        render_walk_forward, render_monthly_pnl,
+                                        render_rolling_winrate, render_pnl_distribution,
+                                        render_r_multiple_chart, trade_streak_stats)
 from providers.yfinance_provider import YFinanceProvider
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -110,6 +112,11 @@ bt_risk       = st.sidebar.slider("Risk per Trade %", 0.5, 5.0, 1.0, step=0.5) /
 bt_rr         = st.sidebar.slider("R:R Ratio", 1.0, 4.0, 2.0, step=0.5)
 bt_sl_mult    = st.sidebar.slider("SL ATR Multiplier", 1.0, 3.0, 1.5, step=0.25)
 bt_is_pct     = st.sidebar.slider("Walk-Forward IS %", 0.5, 0.85, 0.70, step=0.05)
+bt_history    = st.sidebar.slider(
+    "Backtest History (bars)", 500, 3000, 2000, step=100,
+    help="Bars used for historical backtest only — separate from chart. "
+         "2000 bars 1h ≈ 83 days ≈ ~120–180 trades."
+)
 
 if not _bybit_live:
     auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
@@ -238,6 +245,22 @@ else:
         symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult, provider_choice
     )
     sig_bars, signals = _cached if _cached[0] is not None else (bars, [])
+
+# ── Historical backtest data (larger dataset — separate from chart) ────────────
+@st.cache_data(ttl=300, show_spinner=False)
+def load_bt_history(symbol, timeframe, limit, provider):
+    """
+    Fetch a large historical bar set for the backtest.
+    Separate from the chart data so the chart stays fast.
+    Yahoo Finance returns up to 2 years of 1h data (~17,000 bars).
+    """
+    if "Bybit" in provider:
+        from providers.bybit import BybitProvider
+        try:
+            return BybitProvider().fetch_bars_paginated(symbol, timeframe, limit)
+        except Exception:
+            pass   # fall back to Yahoo Finance
+    return YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
@@ -501,112 +524,188 @@ with tab_mtf:
 # TAB 5 — Backtest
 # ════════════════════════════════════════════════════════════════════════════════
 with tab_bt:
-    st.markdown(f"### Signal Engine + Backtest — {symbol} · {timeframe}")
+    st.markdown(f"### Historical Backtest + Walk-Forward — {symbol} · {timeframe}")
 
-    if not signals:
-        st.warning("Not enough bars for signal detection. Increase Bars slider or switch to 1h/4h timeframe.")
-    else:
-        st.info(f"**{len(signals)} signals detected** across {bar_limit} bars.")
+    # ── Load large historical dataset (separate from chart) ───────────────────
+    with st.spinner(f"Loading {bt_history} bars of history… (first load may take ~15s)"):
+        bt_bars = load_bt_history(symbol, timeframe, bt_history, provider_choice)
 
-        # ── Walk-Forward ──────────────────────────────────────────────────────
-        with st.spinner("Running walk-forward validation…"):
-            wf = walk_forward(
-                sig_bars, signals,
-                is_pct     = bt_is_pct,
-                engine_cfg = dict(
-                    initial_capital   = bt_capital,
-                    risk_per_trade    = bt_risk,
-                    max_bars_in_trade = 20,
-                ),
-            )
+    if not bt_bars:
+        st.warning("No historical data returned.")
+        st.stop()
 
-        # Edge verdict
-        edge_color = "#26a69a" if wf.has_edge else "#ef5350"
-        edge_label = "✅ EDGE CONFIRMED" if wf.has_edge else "❌ NO EDGE — DO NOT TRADE LIVE"
-        st.markdown(
-            f"<div style='background:{edge_color};padding:14px;border-radius:8px;"
-            f"text-align:center;font-size:1.4em;font-weight:bold;color:white'>"
-            f"{edge_label} &nbsp;|&nbsp; OOS/IS Sharpe degradation: {wf.degradation:.2f}"
-            f"</div>",
-            unsafe_allow_html=True,
+    # ── Run signals on historical data ────────────────────────────────────────
+    with st.spinner("Detecting signals on historical data…"):
+        _bt_eng  = SignalEngine(tick_size=tick_size, rr_ratio=bt_rr, sl_atr_mult=bt_sl_mult)
+        bt_sigs  = _bt_eng.detect(bt_bars)
+
+    # Date range of the backtest data
+    _dt_start = datetime.fromtimestamp(bt_bars[0].timestamp  / 1000).strftime("%Y-%m-%d")
+    _dt_end   = datetime.fromtimestamp(bt_bars[-1].timestamp / 1000).strftime("%Y-%m-%d")
+
+    # Context banner
+    _est_trades = max(1, int(len(bt_sigs) * 0.4))   # ~40% of signals → actual trades
+    st.info(
+        f"📅 **{_dt_start} → {_dt_end}** &nbsp;·&nbsp; "
+        f"**{len(bt_bars):,} bars** &nbsp;·&nbsp; "
+        f"**{len(bt_sigs)} signals** → ~**{_est_trades} estimated trades**"
+    )
+
+    if len(bt_sigs) < 10:
+        st.warning("Too few signals. Try a higher Backtest History, or switch to 1h/4h timeframe.")
+        st.stop()
+
+    # ── Walk-Forward validation ───────────────────────────────────────────────
+    with st.spinner("Running walk-forward validation…"):
+        wf = walk_forward(
+            bt_bars, bt_sigs,
+            is_pct     = bt_is_pct,
+            engine_cfg = dict(
+                initial_capital   = bt_capital,
+                risk_per_trade    = bt_risk,
+                max_bars_in_trade = 20,
+            ),
         )
-        st.markdown("---")
 
-        # ── IS vs OOS side by side ────────────────────────────────────────────
-        col_is, col_oos = st.columns(2)
+    # Full backtest on ALL historical data (not split)
+    _full_bt = BacktestEngine(
+        initial_capital   = bt_capital,
+        risk_per_trade    = bt_risk,
+        max_bars_in_trade = 20,
+    ).run(bt_bars, bt_sigs)
 
-        with col_is:
-            st.markdown(f"#### In-Sample ({int(bt_is_pct*100)}%)")
-            is_r = wf.is_result.report
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Trades",       str(is_r.get('n_trades', 0)))
-            m2.metric("Win Rate",     f"{is_r.get('win_rate',0)*100:.1f}%")
-            m3.metric("Sharpe",       f"{is_r.get('sharpe',0):.2f}")
-            m4.metric("PnL",          f"€{is_r.get('total_pnl',0):,.0f}")
-            st.plotly_chart(render_equity_curve(wf.is_result, "IS Equity"),
-                            use_container_width=True)
+    n_total = _full_bt.report.get("n_trades", 0)
 
-        with col_oos:
-            st.markdown(f"#### Out-of-Sample ({int((1-bt_is_pct)*100)}%)")
-            oos_r = wf.oos_result.report
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Trades",       str(oos_r.get('n_trades', 0)))
-            m2.metric("Win Rate",     f"{oos_r.get('win_rate',0)*100:.1f}%")
-            m3.metric("Sharpe",       f"{oos_r.get('sharpe',0):.2f}")
-            m4.metric("PnL",          f"€{oos_r.get('total_pnl',0):,.0f}")
-            st.plotly_chart(render_equity_curve(wf.oos_result, "OOS Equity"),
-                            use_container_width=True)
+    # ── Edge verdict ──────────────────────────────────────────────────────────
+    edge_color = "#26a69a" if wf.has_edge else "#ef5350"
+    edge_label = "✅ EDGE CONFIRMED" if wf.has_edge else "❌ NO EDGE — DO NOT TRADE LIVE"
+    st.markdown(
+        f"<div style='background:{edge_color};padding:14px;border-radius:8px;"
+        f"text-align:center;font-size:1.4em;font-weight:bold;color:white'>"
+        f"{edge_label} &nbsp;|&nbsp; OOS/IS Sharpe degradation: {wf.degradation:.2f}"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("---")
 
-        st.markdown("---")
+    # ── Full-history KPIs ─────────────────────────────────────────────────────
+    st.markdown(f"#### Full Historical Backtest — {n_total} trades ({_dt_start} → {_dt_end})")
+    _r = _full_bt.report
+    k1, k2, k3, k4, k5, k6 = st.columns(6)
+    k1.metric("Trades",        str(_r.get("n_trades", 0)))
+    k2.metric("Win Rate",      f"{_r.get('win_rate', 0)*100:.1f}%")
+    k3.metric("Profit Factor", f"{_r.get('profit_factor', 0):.2f}")
+    k4.metric("Sharpe",        f"{_r.get('sharpe', 0):.2f}")
+    k5.metric("Max DD",        f"{_r.get('max_drawdown_pct', 0):.1f}%")
+    k6.metric("Total PnL",     f"€{_r.get('total_pnl', 0):,.0f}")
 
-        # ── Full metrics table (OOS) ──────────────────────────────────────────
-        st.markdown("#### Full Performance Report — Out-of-Sample")
-        col_met, col_eq = st.columns([1, 1.5])
-        with col_met:
-            st.plotly_chart(render_metrics_table(wf.oos_result.report),
-                            use_container_width=True)
-        with col_eq:
-            st.plotly_chart(render_walk_forward(wf), use_container_width=True)
-            st.markdown("##### Kelly Position Sizing")
-            k_full = wf.oos_result.report.get("kelly_full", 0)
-            k_half = wf.oos_result.report.get("kelly_half", 0)
-            kc1, kc2 = st.columns(2)
-            kc1.metric("Full Kelly", f"{k_full*100:.1f}% of capital",
-                        help="Maximum theoretical bet size — aggressive")
-            kc2.metric("Half Kelly", f"{k_half*100:.1f}% of capital",
-                        help="Recommended: half Kelly reduces ruin probability")
+    # Streak stats
+    _streaks = trade_streak_stats(_full_bt)
+    if _streaks:
+        s1, s2, s3, s4, s5 = st.columns(5)
+        s1.metric("Max Win Streak",  str(_streaks["max_win_streak"]))
+        s2.metric("Max Loss Streak", str(_streaks["max_loss_streak"]))
+        s3.metric("Avg Win Streak",  str(_streaks["avg_win_streak"]))
+        s4.metric("Avg Loss Streak", str(_streaks["avg_loss_streak"]))
+        cur = _streaks["current_streak"]
+        s5.metric("Current Streak",
+                  f"{'🟢 +' if cur > 0 else '🔴 '}{abs(cur)} {'wins' if cur > 0 else 'losses'}")
 
-        st.markdown("---")
+    st.markdown("---")
 
-        # ── Signal breakdown ──────────────────────────────────────────────────
-        st.markdown("#### Performance by Signal Type")
-        st.plotly_chart(render_signal_breakdown(wf.oos_result),
+    # ── Full equity curve ─────────────────────────────────────────────────────
+    st.plotly_chart(render_equity_curve(_full_bt, f"Full Equity Curve — {n_total} trades"),
+                    use_container_width=True)
+
+    # ── Monthly PnL + R-multiple ──────────────────────────────────────────────
+    col_m, col_r = st.columns(2)
+    with col_m:
+        st.plotly_chart(render_monthly_pnl(_full_bt), use_container_width=True)
+    with col_r:
+        st.plotly_chart(render_r_multiple_chart(_full_bt), use_container_width=True)
+
+    # ── Rolling metrics + distribution ────────────────────────────────────────
+    col_rw, col_dist = st.columns(2)
+    with col_rw:
+        st.plotly_chart(render_rolling_winrate(_full_bt, window=20),
+                        use_container_width=True)
+    with col_dist:
+        st.plotly_chart(render_pnl_distribution(_full_bt), use_container_width=True)
+
+    st.markdown("---")
+
+    # ── Walk-Forward IS vs OOS ────────────────────────────────────────────────
+    st.markdown("#### Walk-Forward Validation (Out-of-Sample Test)")
+    col_is, col_oos = st.columns(2)
+
+    with col_is:
+        st.markdown(f"#### In-Sample ({int(bt_is_pct*100)}%)")
+        is_r = wf.is_result.report
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Trades",   str(is_r.get("n_trades", 0)))
+        m2.metric("Win Rate", f"{is_r.get('win_rate', 0)*100:.1f}%")
+        m3.metric("Sharpe",   f"{is_r.get('sharpe', 0):.2f}")
+        m4.metric("PnL",      f"€{is_r.get('total_pnl', 0):,.0f}")
+        st.plotly_chart(render_equity_curve(wf.is_result, "IS Equity"),
                         use_container_width=True)
 
-        # ── Trade scatter ─────────────────────────────────────────────────────
-        st.markdown("#### Individual Trades — OOS")
-        st.plotly_chart(render_trades_scatter(wf.oos_result, sig_bars),
+    with col_oos:
+        st.markdown(f"#### Out-of-Sample ({int((1-bt_is_pct)*100)}%)")
+        oos_r = wf.oos_result.report
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Trades",   str(oos_r.get("n_trades", 0)))
+        m2.metric("Win Rate", f"{oos_r.get('win_rate', 0)*100:.1f}%")
+        m3.metric("Sharpe",   f"{oos_r.get('sharpe', 0):.2f}")
+        m4.metric("PnL",      f"€{oos_r.get('total_pnl', 0):,.0f}")
+        st.plotly_chart(render_equity_curve(wf.oos_result, "OOS Equity"),
                         use_container_width=True)
 
-        # ── Trade log table ───────────────────────────────────────────────────
-        if wf.oos_result.trades:
-            st.markdown("#### Trade Log")
-            import pandas as pd
-            from datetime import datetime
-            rows = []
-            for t in wf.oos_result.trades:
-                rows.append({
-                    "Time":    datetime.fromtimestamp(t.signal.timestamp/1000).strftime("%Y-%m-%d %H:%M"),
-                    "Signal":  t.signal.signal_type,
-                    "Dir":     t.signal.direction.upper(),
-                    "Entry":   f"{t.entry_price:,.2f}",
-                    "Exit":    f"{t.exit_price:,.2f}",
-                    "Reason":  t.exit_reason.upper(),
-                    "PnL (€)": f"{t.pnl:+,.2f}",
-                    "R":       f"{t.r_multiple:+.2f}",
-                })
-            df = pd.DataFrame(rows)
-            st.dataframe(df, use_container_width=True, height=300)
+    st.markdown("---")
+
+    # ── Full metrics table (OOS) ──────────────────────────────────────────────
+    st.markdown("#### Full Performance Report — Out-of-Sample")
+    col_met, col_eq = st.columns([1, 1.5])
+    with col_met:
+        st.plotly_chart(render_metrics_table(wf.oos_result.report),
+                        use_container_width=True)
+    with col_eq:
+        st.plotly_chart(render_walk_forward(wf), use_container_width=True)
+        st.markdown("##### Kelly Position Sizing")
+        k_full = wf.oos_result.report.get("kelly_full", 0)
+        k_half = wf.oos_result.report.get("kelly_half", 0)
+        kc1, kc2 = st.columns(2)
+        kc1.metric("Full Kelly", f"{k_full*100:.1f}% of capital",
+                    help="Maximum theoretical bet size — aggressive")
+        kc2.metric("Half Kelly", f"{k_half*100:.1f}% of capital",
+                    help="Recommended: half Kelly reduces ruin probability")
+
+    st.markdown("---")
+
+    # ── Signal type breakdown ─────────────────────────────────────────────────
+    st.markdown("#### Performance by Signal Type — Full History")
+    st.plotly_chart(render_signal_breakdown(_full_bt), use_container_width=True)
+
+    # ── Trade scatter + log ───────────────────────────────────────────────────
+    st.markdown("#### All Trades — Full History")
+    st.plotly_chart(render_trades_scatter(_full_bt, bt_bars), use_container_width=True)
+
+    if _full_bt.trades:
+        st.markdown("#### Trade Log")
+        rows = []
+        for t in _full_bt.trades:
+            rows.append({
+                "Date":    datetime.fromtimestamp(t.signal.timestamp/1000).strftime("%Y-%m-%d %H:%M"),
+                "Signal":  t.signal.signal_type,
+                "Dir":     t.signal.direction.upper(),
+                "Entry":   f"{t.entry_price:,.2f}",
+                "Exit":    f"{t.exit_price:,.2f}",
+                "Reason":  t.exit_reason.upper(),
+                "PnL (€)": f"{t.pnl:+,.2f}",
+                "R":       f"{t.r_multiple:+.2f}",
+                "Conf":    f"{t.signal.confidence:.0%}",
+            })
+        df = pd.DataFrame(rows)
+        st.dataframe(df, use_container_width=True, height=350)
 
 # ── Auto-refresh ──────────────────────────────────────────────────────────────
 if _bybit_live:
