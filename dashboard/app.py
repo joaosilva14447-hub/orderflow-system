@@ -21,15 +21,8 @@ from core.vwap      import calculate_vwap, calculate_vwap_bands
 from core.sessions  import calculate_sessions, get_current_sessions, SESSION_LINE_COLORS, SESSION_COLORS
 from core.footprint import build_footprints
 from core.heatmap   import heatmap_from_bars
-from core.mtf       import calculate_mtf_cvd, confluence_score
-from core.signals   import SignalEngine
-from core.backtest  import BacktestEngine, walk_forward
+from core.mtf       import calculate_mtf_cvd, confluence_score as mtf_confluence_score
 from dashboard.footprint_chart import render_footprint, render_footprint_summary
-from dashboard.backtest_page   import (render_equity_curve, render_metrics_table,
-                                        render_trades_scatter, render_signal_breakdown,
-                                        render_walk_forward, render_monthly_pnl,
-                                        render_rolling_winrate, render_pnl_distribution,
-                                        render_r_multiple_chart, trade_streak_stats)
 from providers.yfinance_provider import YFinanceProvider
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -47,115 +40,78 @@ MARKETS = {
 }
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-st.sidebar.title("OrderFlow System")
+st.sidebar.title("📊 OrderFlow System")
 
-market_choice = st.sidebar.selectbox("Market", list(MARKETS.keys()))
-symbol        = st.sidebar.selectbox("Symbol", MARKETS[market_choice])
+# ── Mercado ───────────────────────────────────────────────────────────────────
+market_choice = st.sidebar.selectbox("Mercado", list(MARKETS.keys()))
+symbol        = st.sidebar.selectbox("Símbolo", MARKETS[market_choice])
 timeframe     = st.sidebar.selectbox("Timeframe",
     ["1m","5m","15m","30m","1h","4h","1d"], index=2)
-bar_limit     = st.sidebar.slider("Bars", 50, 500, 200)
-tick_size     = st.sidebar.number_input("Tick Size", value=10.0, min_value=0.0001, format="%.4f")
-va_pct        = st.sidebar.slider("Value Area %", 0.5, 0.9, 0.70)
+bar_limit     = st.sidebar.slider("Barras no gráfico", 50, 500, 200)
 
-# ── Data source ───────────────────────────────────────────────────────────────
+# ── Fonte de dados ────────────────────────────────────────────────────────────
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Data Source**")
-
 _is_crypto = (market_choice == "Crypto")
 _provider_opts = (
-    ["Yahoo Finance", "Bybit — REST (enriched)", "Bybit — Live WebSocket"]
+    ["Yahoo Finance", "Bybit — REST (real delta)", "Bybit — Live WebSocket"]
     if _is_crypto else ["Yahoo Finance"]
 )
 provider_choice = st.sidebar.radio(
-    "Provider",
+    "📡 Fonte de dados",
     _provider_opts,
     index=0,
     help=(
-        "**Yahoo Finance**: works everywhere, buy/sell approximated.\n\n"
-        "**Bybit REST**: local only — real data, close-position delta + recent-trade overlay.\n\n"
-        "**Bybit Live**: local only — exact buy/sell from WebSocket trades in real-time."
+        "**Yahoo Finance** — funciona em qualquer lugar, delta aproximado.\n\n"
+        "**Bybit REST** — delta real (close-position + trades recentes). Só local.\n\n"
+        "**Bybit Live** — delta exacto via WebSocket em tempo real. Só local."
     ),
 )
 
 _bybit_live = (provider_choice == "Bybit — Live WebSocket")
-_bybit_rest = (provider_choice == "Bybit — REST (enriched)")
+_bybit_rest = (provider_choice == "Bybit — REST (real delta)")
 _use_bybit  = _bybit_live or _bybit_rest
 
 if _use_bybit:
-    st.sidebar.caption("⚠️ Bybit requires local network — geo-blocked on Streamlit Cloud.")
+    st.sidebar.caption("⚠️ Bybit só funciona localmente.")
 
 live_refresh_s = 5
 if _bybit_live:
     live_refresh_s = st.sidebar.select_slider(
-        "Live refresh (seconds)", options=[3, 5, 10, 15, 30], value=5
+        "Refresh (segundos)", options=[3, 5, 10, 15, 30], value=5
     )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**VWAP**")
-show_vwap  = st.sidebar.checkbox("Show VWAP", value=True)
-show_bands = st.sidebar.checkbox("Show SD Bands", value=True)
-n_bands    = st.sidebar.slider("SD Bands", 1, 3, 2)
+# ── Indicadores (expander) ────────────────────────────────────────────────────
+with st.sidebar.expander("📈 Indicadores", expanded=True):
+    tick_size  = st.number_input("Tick Size", value=10.0, min_value=0.0001, format="%.4f")
+    va_pct     = st.slider("Value Area %", 0.5, 0.9, 0.70, key="va_pct")
+    st.markdown("**VWAP**")
+    show_vwap  = st.checkbox("Mostrar VWAP", value=True)
+    show_bands = st.checkbox("Mostrar Bandas SD", value=True)
+    n_bands    = st.slider("Nº Bandas SD", 1, 3, 2)
+    st.markdown("**Sessões**")
+    show_sessions = st.checkbox("Mostrar POC/VA das sessões", value=True)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Sessions**")
-show_sessions = st.sidebar.checkbox("Show Session POC/VA", value=True)
+# ── Confluência (expander) ─────────────────────────────────────────────────────
+with st.sidebar.expander("🎯 Confluência", expanded=True):
+    conf_min_score = st.slider(
+        "Score mínimo para alerta", 3, 6, 4,
+        help="Número mínimo de factores alinhados para considerar confluência forte."
+    )
+    conf_cvd_bars = st.slider(
+        "Janela CVD (barras)", 5, 30, 10,
+        help="Nº de barras para calcular a tendência do CVD."
+    )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Footprint**")
-fp_bars       = st.sidebar.slider("Footprint Bars", 5, 40, 15)
-fp_imb_thresh = st.sidebar.slider("Imbalance Ratio", 1.5, 5.0, 3.0, step=0.5)
-fp_show_nums  = st.sidebar.checkbox("Show Volume Numbers", value=True)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Backtest**")
-bt_capital    = st.sidebar.number_input("Capital (€)", value=10000, step=1000)
-bt_risk       = st.sidebar.slider("Risk per Trade %", 0.5, 5.0, 1.0, step=0.5) / 100
-bt_rr         = st.sidebar.slider("R:R Ratio", 1.0, 4.0, 2.0, step=0.5)
-bt_sl_mult    = st.sidebar.slider("SL ATR Multiplier", 1.0, 3.0, 1.5, step=0.25)
-bt_is_pct     = st.sidebar.slider("Walk-Forward IS %", 0.5, 0.85, 0.70, step=0.05)
-bt_history    = st.sidebar.slider(
-    "Backtest History (barras)", 200, 2000, 500, step=100,
-    help="Barras para o backtest histórico (separado do gráfico).\n\n"
-         "500 barras 1h ≈ 20 dias ≈ ~30–60 trades. Primeira execução demora ~10-20s.\n\n"
-         "⚠️ Acima de 1000 barras o primeiro cálculo pode demorar 30-60s (fica em cache depois)."
-)
-
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Signal Filters**")
-_ALL_SIGNALS = [
-    "VA_BREAKOUT_BULL", "VA_BREAKOUT_BEAR",
-    "POC_RECLAIM_BULL", "POC_RECLAIM_BEAR",
-    "CVD_DIV_BULL",     "CVD_DIV_BEAR",
-    "VWAP_CROSS_BULL",  "VWAP_CROSS_BEAR",
-    "VWAP_BOUNCE_BULL", "VWAP_BOUNCE_BEAR",
-]
-# Default: disable the known underperformers (CVD_DIV_BEAR 25% WR, VWAP_BOUNCE negatives)
-_DEFAULT_SIGNALS = [
-    "VA_BREAKOUT_BULL", "VA_BREAKOUT_BEAR",
-    "POC_RECLAIM_BULL", "POC_RECLAIM_BEAR",
-    "CVD_DIV_BULL",
-    "VWAP_CROSS_BULL",  "VWAP_CROSS_BEAR",
-]
-enabled_signals = st.sidebar.multiselect(
-    "Active Signal Types",
-    _ALL_SIGNALS,
-    default=_DEFAULT_SIGNALS,
-    help=(
-        "Enable/disable individual signal types.\n\n"
-        "**VA_BREAKOUT**: best performer (80%/67% WR) — always keep.\n"
-        "**CVD_DIV_BEAR**: 25% WR with approximated data — disabled by default.\n"
-        "**VWAP_BOUNCE**: negative avg PnL — disabled by default."
-    ),
-)
-bt_min_conf = st.sidebar.slider(
-    "Min Signal Confidence", 0.50, 0.90, 0.60, step=0.05,
-    help="Signals below this threshold are discarded before backtest."
-)
-
-if not _bybit_live:
-    auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
-else:
-    auto_ref = False   # live mode manages its own refresh cycle
+# ── Avançado (expander fechado) ───────────────────────────────────────────────
+with st.sidebar.expander("⚙️ Avançado", expanded=False):
+    fp_bars       = st.slider("Footprint Bars", 5, 40, 15)
+    fp_imb_thresh = st.slider("Imbalance Ratio", 1.5, 5.0, 3.0, step=0.5)
+    fp_show_nums  = st.checkbox("Mostrar números de volume", value=True)
+    st.markdown("---")
+    if not _bybit_live:
+        auto_ref = st.checkbox("Auto Refresh (60s)", value=False)
+    else:
+        auto_ref = False
 
 # ── Live feed (Bybit WebSocket, one instance per symbol+timeframe) ────────────
 @st.cache_resource
@@ -254,84 +210,92 @@ sessions  = calculate_sessions(bars, tick_size)
 cur_sess  = get_current_sessions(sessions)
 heatmap   = heatmap_from_bars(bars, tick_size)
 
-# Pre-compute signals — reuse already-loaded bars so no extra fetch
-@st.cache_data(ttl=120, show_spinner=False)
-def _compute_signals_cached(symbol, timeframe, limit, tick_size, rr, sl_mult, provider,
-                             enabled_signals_tuple=None, min_conf=0.60):
-    """Cached signal computation keyed by provider + active signal types."""
-    # Convert hashable tuple back to list (or None = all signals)
-    _enabled = list(enabled_signals_tuple) if enabled_signals_tuple else None
-    if provider == "Bybit — REST (enriched)":
-        from providers.bybit import BybitProvider
-        b, _ = BybitProvider().fetch_bars_enriched(symbol, timeframe, limit)
-    elif provider == "Bybit — Live WebSocket":
-        # For signals, use the seeded+live merged bars (already computed above)
-        return None, None   # handled outside cache
-    else:
-        b = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
-    eng = SignalEngine(
-        tick_size       = tick_size,
-        rr_ratio        = rr,
-        sl_atr_mult     = sl_mult,
-        enabled_signals = _enabled,
-        min_confidence  = min_conf,
-    )
-    return b, eng.detect(b)
+# ── Função de confluência ─────────────────────────────────────────────────────
 
-# Convert list → tuple (hashable) for cache key; None means all enabled
-_enabled_tuple = tuple(enabled_signals) if enabled_signals != _ALL_SIGNALS else None
-
-if _bybit_live:
-    # Use the already-merged bars — no extra fetch needed
-    sig_bars = bars
-    eng_sig  = SignalEngine(
-        tick_size       = tick_size,
-        rr_ratio        = bt_rr,
-        sl_atr_mult     = bt_sl_mult,
-        enabled_signals = list(_enabled_tuple) if _enabled_tuple else None,
-        min_confidence  = bt_min_conf,
-    )
-    signals  = eng_sig.detect(sig_bars)
-else:
-    _cached = _compute_signals_cached(
-        symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult, provider_choice,
-        enabled_signals_tuple=_enabled_tuple,
-        min_conf=bt_min_conf,
-    )
-    sig_bars, signals = _cached if _cached[0] is not None else (bars, [])
-
-# ── Historical backtest data + signal detection (cached juntos) ───────────────
-@st.cache_data(ttl=300, show_spinner=False)
-def _load_bt_and_detect(symbol, timeframe, limit, provider,
-                         tick_size, rr, sl_mult,
-                         enabled_signals_tuple=None, min_conf=0.60):
+def _calc_confluence(bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars):
     """
-    Fetch barras históricas E deteta sinais — tudo numa cache só (ttl=5min).
-    Assim a deteção O(n²) não repete a cada interação na sidebar.
+    Calcula score de confluência para o último bar.
+    Retorna (bull_factors, bear_factors) como listas de strings.
+    Cada factor representa um indicador alinhado numa direcção.
     """
-    if "Bybit" in provider:
-        from providers.bybit import BybitProvider
-        try:
-            bt_bars = BybitProvider().fetch_bars_paginated(symbol, timeframe, limit)
-        except Exception:
-            bt_bars = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
-    else:
-        bt_bars = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
+    if not bars:
+        return [], []
 
-    _enabled = list(enabled_signals_tuple) if enabled_signals_tuple else None
-    eng = SignalEngine(
-        tick_size       = tick_size,
-        rr_ratio        = rr,
-        sl_atr_mult     = sl_mult,
-        enabled_signals = _enabled,
-        min_confidence  = min_conf,
-    )
-    bt_sigs = eng.detect(bt_bars)
-    return bt_bars, bt_sigs
+    price = closes[-1]
+    bull, bear = [], []
+
+    # 1. VWAP
+    if vwaps and vwaps[-1]:
+        vwap = vwaps[-1]
+        diff_pct = (price - vwap) / vwap * 100
+        if diff_pct > 0.10:
+            bull.append(f"Preço acima do VWAP (+{diff_pct:.2f}%)")
+        elif diff_pct < -0.10:
+            bear.append(f"Preço abaixo do VWAP ({diff_pct:.2f}%)")
+        if abs(diff_pct) < 0.15:
+            label = "🔵 Preço junto ao VWAP — zona de decisão"
+            bull.append(label); bear.append(label)
+
+    # 2. POC
+    if poc:
+        diff_pct = (price - poc) / poc * 100
+        if diff_pct > 0.15:
+            bull.append(f"Preço acima do POC (+{diff_pct:.2f}%)")
+        elif diff_pct < -0.15:
+            bear.append(f"Preço abaixo do POC ({diff_pct:.2f}%)")
+
+    # 3. Value Area
+    if va_hi and va_lo:
+        mid_va = (va_hi + va_lo) / 2
+        if price > va_hi:
+            bull.append(f"Breakout acima da VA High ({va_hi:,.2f})")
+        elif price < va_lo:
+            bear.append(f"Breakdown abaixo da VA Low ({va_lo:,.2f})")
+        elif price > mid_va:
+            bull.append("Preço na metade superior da Value Area")
+        else:
+            bear.append("Preço na metade inferior da Value Area")
+
+    # 4. CVD direcção (últimas N barras)
+    n = conf_cvd_bars
+    if cvds and len(cvds) >= n:
+        delta_cvd = cvds[-1] - cvds[-n]
+        if delta_cvd > 0:
+            bull.append(f"CVD crescente (+{delta_cvd:+,.0f} em {n} barras)")
+        else:
+            bear.append(f"CVD decrescente ({delta_cvd:+,.0f} em {n} barras)")
+
+    # 5. CVD nível absoluto
+    if cvds:
+        if cvds[-1] > 0:
+            bull.append(f"CVD positivo acumulado ({cvds[-1]:+,.0f})")
+        else:
+            bear.append(f"CVD negativo acumulado ({cvds[-1]:+,.0f})")
+
+    # 6. Delta da última barra
+    if bars:
+        last_delta = bars[-1].delta
+        if last_delta > 0:
+            bull.append(f"Delta positivo na última barra (+{last_delta:+,.0f})")
+        else:
+            bear.append(f"Delta negativo na última barra ({last_delta:+,.0f})")
+
+    # 7. POC da sessão
+    if cur_sess:
+        for sess in cur_sess:
+            if sess.poc:
+                diff_pct = (price - sess.poc) / sess.poc * 100
+                if diff_pct > 0.1:
+                    bull.append(f"Acima do POC da sessão {sess.name} (+{diff_pct:.2f}%)")
+                elif diff_pct < -0.1:
+                    bear.append(f"Abaixo do POC da sessão {sess.name} ({diff_pct:.2f}%)")
+
+    return bull, bear
+
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
-tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
-    "📊 OrderFlow", "🔬 Footprint", "🌡️ Heatmap", "📐 Multi-TF CVD", "⚡ Backtest"
+tab_main, tab_conf, tab_fp, tab_heatmap, tab_mtf = st.tabs([
+    "📊 Orderflow", "🎯 Confluência", "🔬 Footprint", "🌡️ Heatmap", "📐 Multi-TF CVD"
 ])
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -339,15 +303,52 @@ tab_main, tab_fp, tab_heatmap, tab_mtf, tab_bt = st.tabs([
 # ════════════════════════════════════════════════════════════════════════════════
 with tab_main:
 
-    # KPIs
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
-    c1.metric("Last Price", f"{closes[-1]:,.2f}")
-    c2.metric("POC",        f"{poc:,.2f}"       if poc   else "—")
-    c3.metric("VA High",    f"{va_hi:,.2f}"      if va_hi else "—")
-    c4.metric("VA Low",     f"{va_lo:,.2f}"      if va_lo else "—")
-    c5.metric("CVD",        f"{cvds[-1]:+,.0f}"  if cvds  else "—")
-    c6.metric("VWAP",       f"{vwaps[-1]:,.2f}"  if vwaps else "—")
+    # ── Score de confluência (calculado antes dos KPIs) ───────────────────────
+    _bull_f, _bear_f = _calc_confluence(
+        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars
+    )
+    _score_bull = len(_bull_f)
+    _score_bear = len(_bear_f)
+    _max_score  = max(_score_bull + _score_bear, 1)
 
+    # ── Linha 1: Preço e níveis ───────────────────────────────────────────────
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("💰 Preço",   f"{closes[-1]:,.2f}")
+    c2.metric("📍 VWAP",    f"{vwaps[-1]:,.2f}"  if vwaps else "—",
+              delta=f"{(closes[-1]-vwaps[-1])/vwaps[-1]*100:+.2f}%" if vwaps and vwaps[-1] else None)
+    c3.metric("🎯 POC",     f"{poc:,.2f}"         if poc   else "—",
+              delta=f"{(closes[-1]-poc)/poc*100:+.2f}%" if poc else None)
+    c4.metric("🔼 VA High", f"{va_hi:,.2f}"       if va_hi else "—")
+    c5.metric("🔽 VA Low",  f"{va_lo:,.2f}"       if va_lo else "—")
+
+    # ── Linha 2: Orderflow e confluência ─────────────────────────────────────
+    d1, d2, d3, d4, d5 = st.columns(5)
+    _last_delta = bars[-1].delta if bars else 0
+    _buy_pct    = bars[-1].buy_volume / bars[-1].volume * 100 if bars and bars[-1].volume else 50
+    d1.metric("📊 CVD",       f"{cvds[-1]:+,.0f}"  if cvds  else "—")
+    d2.metric("⚡ Delta",     f"{_last_delta:+,.0f}")
+    d3.metric("🟢 Buy Vol %", f"{_buy_pct:.1f}%",
+              delta=f"{_buy_pct-50:+.1f}pp")
+
+    # Confluência card
+    if _score_bull >= conf_min_score:
+        _conf_color = "#1a6b3c"; _conf_icon = "🟢"; _conf_txt = "BULLISH"
+    elif _score_bear >= conf_min_score:
+        _conf_color = "#7b1a1a"; _conf_icon = "🔴"; _conf_txt = "BEARISH"
+    else:
+        _conf_color = "#333333"; _conf_icon = "⚪"; _conf_txt = "NEUTRO"
+
+    d4.metric(f"{_conf_icon} Confluência Bull", f"{_score_bull}/{_score_bull+_score_bear}")
+    d5.metric(f"{_conf_icon} Confluência Bear", f"{_score_bear}/{_score_bull+_score_bear}")
+
+    # Banner de confluência
+    st.markdown(
+        f"<div style='background:{_conf_color};padding:8px 16px;border-radius:6px;"
+        f"text-align:center;font-weight:bold;color:white;margin-bottom:8px'>"
+        f"{_conf_icon} {_conf_txt} — {_score_bull} factores bull · {_score_bear} factores bear"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown("---")
 
     # ── Candlestick + VWAP + Sessions ────────────────────────────────────────
@@ -454,20 +455,19 @@ with tab_main:
                                   height=240, margin=dict(l=0,r=0,t=40,b=0))
             st.plotly_chart(fig_vp, use_container_width=True)
 
-    # ── Session Table ─────────────────────────────────────────────────────────
+    # ── Nota de sessões (detalhes no tab Confluência) ─────────────────────────
     if cur_sess:
         st.markdown("---")
-        st.markdown("**Session Analysis — Today**")
-        scols = st.columns(len(cur_sess))
-        for i, sess in enumerate(cur_sess):
-            with scols[i]:
-                color = SESSION_LINE_COLORS.get(sess.name, "white")
-                st.markdown(f"<span style='color:{color}'>**{sess.name}**</span>", unsafe_allow_html=True)
-                st.metric("POC",    f"{sess.poc:,.2f}"     if sess.poc     else "—")
-                st.metric("VA H",   f"{sess.va_high:,.2f}" if sess.va_high else "—")
-                st.metric("VA L",   f"{sess.va_low:,.2f}"  if sess.va_low  else "—")
-                st.metric("VWAP",   f"{sess.vwap:,.2f}")
-                st.metric("Range",  f"{sess.high - sess.low:,.2f}")
+        _sess_names = " &nbsp;·&nbsp; ".join(
+            f"<span style='color:{SESSION_LINE_COLORS.get(s.name, \"white\")}'>"
+            f"<b>{s.name}</b> POC {s.poc:,.0f}</span>"
+            for s in cur_sess if s.poc
+        )
+        st.markdown(
+            f"<div style='font-size:0.85em;color:#bbb;padding:6px 0'>🕐 Sessões activas: {_sess_names}"
+            f"&nbsp;— detalhes completos no tab <b>🎯 Confluência</b></div>",
+            unsafe_allow_html=True,
+        )
 
 # ════════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Footprint
@@ -545,7 +545,7 @@ with tab_mtf:
 
     with st.spinner("Fetching multi-timeframe data…"):
         snapshots = calculate_mtf_cvd(symbol, ["5m","15m","1h","4h","1d"], limit=100)
-        conf = confluence_score(snapshots)
+        conf = mtf_confluence_score(snapshots)
 
     # Confluence score bar
     score = conf["score"]
@@ -588,194 +588,166 @@ with tab_mtf:
                 st.caption(f"{arrow} {snap.bars_used} bars")
 
 # ════════════════════════════════════════════════════════════════════════════════
-# TAB 5 — Backtest
+# TAB 2 — Confluência
 # ════════════════════════════════════════════════════════════════════════════════
-with tab_bt:
-    st.markdown(f"### Historical Backtest + Walk-Forward — {symbol} · {timeframe}")
+with tab_conf:
+    st.markdown(f"### 🎯 Análise de Confluência — {symbol} · {timeframe}")
+    st.caption("Quantos indicadores apontam na mesma direcção? Quanto mais factores alinhados, maior a confiança no setup.")
 
-    # ── Carregar barras + detetar sinais (resultado em cache 5 min) ──────────
-    with st.spinner(
-        f"⏳ A carregar {bt_history} barras e detetar sinais… "
-        f"(primeira vez: ~20-40s · seguintes: instantâneo)"
-    ):
-        bt_bars, bt_sigs = _load_bt_and_detect(
-            symbol, timeframe, bt_history, provider_choice,
-            tick_size, bt_rr, bt_sl_mult,
-            enabled_signals_tuple=_enabled_tuple,
-            min_conf=bt_min_conf,
-        )
+    # ── Score principal ───────────────────────────────────────────────────────
+    _bull_fc, _bear_fc = _calc_confluence(
+        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars
+    )
+    _sb = len(_bull_fc)
+    _se = len(_bear_fc)
+    _total = _sb + _se
 
-    if not bt_bars:
-        st.warning("Sem dados históricos.")
-        st.stop()
+    # Barra de confluência visual
+    _pct_bull = int(_sb / _total * 100) if _total > 0 else 50
+    _pct_bear = 100 - _pct_bull
 
-    # Date range of the backtest data
-    _dt_start = datetime.fromtimestamp(bt_bars[0].timestamp  / 1000).strftime("%Y-%m-%d")
-    _dt_end   = datetime.fromtimestamp(bt_bars[-1].timestamp / 1000).strftime("%Y-%m-%d")
+    if _sb >= conf_min_score and _sb > _se:
+        _verdict_color = "#1a6b3c"; _verdict_icon = "🟢"; _verdict = "CONFLUÊNCIA BULLISH"
+    elif _se >= conf_min_score and _se > _sb:
+        _verdict_color = "#7b1a1a"; _verdict_icon = "🔴"; _verdict = "CONFLUÊNCIA BEARISH"
+    elif _sb >= conf_min_score or _se >= conf_min_score:
+        _verdict_color = "#6b5a1a"; _verdict_icon = "🟡"; _verdict = "CONFLUÊNCIA MODERADA"
+    else:
+        _verdict_color = "#2a2a2a"; _verdict_icon = "⚪"; _verdict = "SEM CONFLUÊNCIA CLARA"
 
-    # Context banner
-    _est_trades = max(1, int(len(bt_sigs) * 0.4))   # ~40% of signals → actual trades
-    st.info(
-        f"📅 **{_dt_start} → {_dt_end}** &nbsp;·&nbsp; "
-        f"**{len(bt_bars):,} bars** &nbsp;·&nbsp; "
-        f"**{len(bt_sigs)} signals** → ~**{_est_trades} estimated trades**"
+    st.markdown(
+        f"<div style='background:{_verdict_color};padding:18px 24px;border-radius:10px;"
+        f"text-align:center;font-size:1.5em;font-weight:bold;color:white;margin-bottom:16px'>"
+        f"{_verdict_icon} {_verdict}<br>"
+        f"<span style='font-size:0.65em;font-weight:normal'>"
+        f"{_sb} factores bullish · {_se} factores bearish · Score mínimo: {conf_min_score}"
+        f"</span></div>",
+        unsafe_allow_html=True,
     )
 
-    if len(bt_sigs) < 10:
-        st.warning("Too few signals. Try a higher Backtest History, or switch to 1h/4h timeframe.")
-        st.stop()
-
-    # ── Walk-Forward validation ───────────────────────────────────────────────
-    with st.spinner("Running walk-forward validation…"):
-        wf = walk_forward(
-            bt_bars, bt_sigs,
-            is_pct     = bt_is_pct,
-            engine_cfg = dict(
-                initial_capital   = bt_capital,
-                risk_per_trade    = bt_risk,
-                max_bars_in_trade = 20,
-            ),
-        )
-
-    # Full backtest on ALL historical data (not split)
-    _full_bt = BacktestEngine(
-        initial_capital   = bt_capital,
-        risk_per_trade    = bt_risk,
-        max_bars_in_trade = 20,
-    ).run(bt_bars, bt_sigs)
-
-    n_total = _full_bt.report.get("n_trades", 0)
-
-    # ── Edge verdict ──────────────────────────────────────────────────────────
-    edge_color = "#26a69a" if wf.has_edge else "#ef5350"
-    edge_label = "✅ EDGE CONFIRMED" if wf.has_edge else "❌ NO EDGE — DO NOT TRADE LIVE"
+    # Barra de força visual
     st.markdown(
-        f"<div style='background:{edge_color};padding:14px;border-radius:8px;"
-        f"text-align:center;font-size:1.4em;font-weight:bold;color:white'>"
-        f"{edge_label} &nbsp;|&nbsp; OOS/IS Sharpe degradation: {wf.degradation:.2f}"
+        f"<div style='display:flex;height:20px;border-radius:4px;overflow:hidden;margin-bottom:16px'>"
+        f"<div style='width:{_pct_bull}%;background:#26a69a'></div>"
+        f"<div style='width:{_pct_bear}%;background:#ef5350'></div>"
         f"</div>",
         unsafe_allow_html=True,
     )
-    st.markdown("---")
 
-    # ── Full-history KPIs ─────────────────────────────────────────────────────
-    st.markdown(f"#### Full Historical Backtest — {n_total} trades ({_dt_start} → {_dt_end})")
-    _r = _full_bt.report
-    k1, k2, k3, k4, k5, k6 = st.columns(6)
-    k1.metric("Trades",        str(_r.get("n_trades", 0)))
-    k2.metric("Win Rate",      f"{_r.get('win_rate', 0)*100:.1f}%")
-    k3.metric("Profit Factor", f"{_r.get('profit_factor', 0):.2f}")
-    k4.metric("Sharpe",        f"{_r.get('sharpe', 0):.2f}")
-    k5.metric("Max DD",        f"{_r.get('max_drawdown_pct', 0):.1f}%")
-    k6.metric("Total PnL",     f"€{_r.get('total_pnl', 0):,.0f}")
+    # ── Factores lado a lado ──────────────────────────────────────────────────
+    col_bull, col_bear = st.columns(2)
 
-    # Streak stats
-    _streaks = trade_streak_stats(_full_bt)
-    if _streaks:
-        s1, s2, s3, s4, s5 = st.columns(5)
-        s1.metric("Max Win Streak",  str(_streaks["max_win_streak"]))
-        s2.metric("Max Loss Streak", str(_streaks["max_loss_streak"]))
-        s3.metric("Avg Win Streak",  str(_streaks["avg_win_streak"]))
-        s4.metric("Avg Loss Streak", str(_streaks["avg_loss_streak"]))
-        cur = _streaks["current_streak"]
-        s5.metric("Current Streak",
-                  f"{'🟢 +' if cur > 0 else '🔴 '}{abs(cur)} {'wins' if cur > 0 else 'losses'}")
+    with col_bull:
+        st.markdown(f"#### 🟢 Factores Bullish ({_sb})")
+        if _bull_fc:
+            for f in _bull_fc:
+                bg = "#0d2b1a" if not f.startswith("🔵") else "#1a2b40"
+                st.markdown(
+                    f"<div style='background:{bg};padding:8px 12px;border-radius:6px;"
+                    f"border-left:3px solid #26a69a;margin-bottom:6px;font-size:0.9em'>"
+                    f"✅ {f}</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("Nenhum factor bullish activo.")
 
-    st.markdown("---")
-
-    # ── Full equity curve ─────────────────────────────────────────────────────
-    st.plotly_chart(render_equity_curve(_full_bt, f"Full Equity Curve — {n_total} trades"),
-                    use_container_width=True)
-
-    # ── Monthly PnL + R-multiple ──────────────────────────────────────────────
-    col_m, col_r = st.columns(2)
-    with col_m:
-        st.plotly_chart(render_monthly_pnl(_full_bt), use_container_width=True)
-    with col_r:
-        st.plotly_chart(render_r_multiple_chart(_full_bt), use_container_width=True)
-
-    # ── Rolling metrics + distribution ────────────────────────────────────────
-    col_rw, col_dist = st.columns(2)
-    with col_rw:
-        st.plotly_chart(render_rolling_winrate(_full_bt, window=20),
-                        use_container_width=True)
-    with col_dist:
-        st.plotly_chart(render_pnl_distribution(_full_bt), use_container_width=True)
+    with col_bear:
+        st.markdown(f"#### 🔴 Factores Bearish ({_se})")
+        if _bear_fc:
+            for f in _bear_fc:
+                bg = "#2b0d0d" if not f.startswith("🔵") else "#1a2b40"
+                st.markdown(
+                    f"<div style='background:{bg};padding:8px 12px;border-radius:6px;"
+                    f"border-left:3px solid #ef5350;margin-bottom:6px;font-size:0.9em'>"
+                    f"❌ {f}</div>",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("Nenhum factor bearish activo.")
 
     st.markdown("---")
 
-    # ── Walk-Forward IS vs OOS ────────────────────────────────────────────────
-    st.markdown("#### Walk-Forward Validation (Out-of-Sample Test)")
-    col_is, col_oos = st.columns(2)
+    # ── Níveis-chave actuais ──────────────────────────────────────────────────
+    st.markdown("#### 📍 Níveis-Chave Actuais")
+    nk1, nk2, nk3, nk4, nk5 = st.columns(5)
+    _price = closes[-1]
+    nk1.metric("Preço Actual", f"{_price:,.2f}")
+    nk2.metric("VWAP",         f"{vwaps[-1]:,.2f}" if vwaps else "—",
+               delta=f"{(_price-vwaps[-1])/vwaps[-1]*100:+.2f}%" if vwaps and vwaps[-1] else None)
+    nk3.metric("POC",          f"{poc:,.2f}" if poc else "—",
+               delta=f"{(_price-poc)/poc*100:+.2f}%" if poc else None)
+    nk4.metric("VA High",      f"{va_hi:,.2f}" if va_hi else "—",
+               delta=f"{(_price-va_hi)/va_hi*100:+.2f}%" if va_hi else None)
+    nk5.metric("VA Low",       f"{va_lo:,.2f}" if va_lo else "—",
+               delta=f"{(_price-va_lo)/va_lo*100:+.2f}%" if va_lo else None)
 
-    with col_is:
-        st.markdown(f"#### In-Sample ({int(bt_is_pct*100)}%)")
-        is_r = wf.is_result.report
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Trades",   str(is_r.get("n_trades", 0)))
-        m2.metric("Win Rate", f"{is_r.get('win_rate', 0)*100:.1f}%")
-        m3.metric("Sharpe",   f"{is_r.get('sharpe', 0):.2f}")
-        m4.metric("PnL",      f"€{is_r.get('total_pnl', 0):,.0f}")
-        st.plotly_chart(render_equity_curve(wf.is_result, "IS Equity"),
-                        use_container_width=True)
+    # ── Sessões ───────────────────────────────────────────────────────────────
+    if cur_sess:
+        st.markdown("---")
+        st.markdown("#### 🕐 Análise de Sessões")
+        scols = st.columns(len(cur_sess))
+        for i, sess in enumerate(cur_sess):
+            with scols[i]:
+                color = SESSION_LINE_COLORS.get(sess.name, "white")
+                st.markdown(
+                    f"<div style='border-left:4px solid {color};padding-left:10px'>"
+                    f"<strong style='color:{color}'>{sess.name}</strong></div>",
+                    unsafe_allow_html=True,
+                )
+                st.metric("POC",   f"{sess.poc:,.2f}"     if sess.poc     else "—",
+                           delta=f"{(_price-sess.poc)/sess.poc*100:+.2f}%" if sess.poc else None)
+                st.metric("VA H",  f"{sess.va_high:,.2f}" if sess.va_high else "—")
+                st.metric("VA L",  f"{sess.va_low:,.2f}"  if sess.va_low  else "—")
+                st.metric("VWAP",  f"{sess.vwap:,.2f}")
+                st.metric("Range", f"{sess.high - sess.low:,.2f}")
 
-    with col_oos:
-        st.markdown(f"#### Out-of-Sample ({int((1-bt_is_pct)*100)}%)")
-        oos_r = wf.oos_result.report
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Trades",   str(oos_r.get("n_trades", 0)))
-        m2.metric("Win Rate", f"{oos_r.get('win_rate', 0)*100:.1f}%")
-        m3.metric("Sharpe",   f"{oos_r.get('sharpe', 0):.2f}")
-        m4.metric("PnL",      f"€{oos_r.get('total_pnl', 0):,.0f}")
-        st.plotly_chart(render_equity_curve(wf.oos_result, "OOS Equity"),
-                        use_container_width=True)
-
+    # ── Multi-TF CVD (confluência cross-timeframe) ────────────────────────────
     st.markdown("---")
+    st.markdown("#### 📐 CVD Multi-Timeframe")
+    with st.spinner("A carregar CVD multi-timeframe…"):
+        _snapshots = calculate_mtf_cvd(symbol, ["5m","15m","1h","4h","1d"], limit=100)
+        _conf_mtf  = mtf_confluence_score(_snapshots)
 
-    # ── Full metrics table (OOS) ──────────────────────────────────────────────
-    st.markdown("#### Full Performance Report — Out-of-Sample")
-    col_met, col_eq = st.columns([1, 1.5])
-    with col_met:
-        st.plotly_chart(render_metrics_table(wf.oos_result.report),
-                        use_container_width=True)
-    with col_eq:
-        st.plotly_chart(render_walk_forward(wf), use_container_width=True)
-        st.markdown("##### Kelly Position Sizing")
-        k_full = wf.oos_result.report.get("kelly_full", 0)
-        k_half = wf.oos_result.report.get("kelly_half", 0)
-        kc1, kc2 = st.columns(2)
-        kc1.metric("Full Kelly", f"{k_full*100:.1f}% of capital",
-                    help="Maximum theoretical bet size — aggressive")
-        kc2.metric("Half Kelly", f"{k_half*100:.1f}% of capital",
-                    help="Recommended: half Kelly reduces ruin probability")
+    _mtf_score  = _conf_mtf["score"]
+    _mtf_color  = "#1a6b3c" if _mtf_score > 0.2 else "#7b1a1a" if _mtf_score < -0.2 else "#333333"
+    _mtf_label  = "BULLISH" if _mtf_score > 0.2 else "BEARISH" if _mtf_score < -0.2 else "NEUTRO"
 
+    st.markdown(
+        f"<div style='background:{_mtf_color};padding:10px;border-radius:6px;"
+        f"text-align:center;font-weight:bold;color:white'>"
+        f"MTF CVD: {_mtf_label} — {_conf_mtf['bullish']}↑ / {_conf_mtf['bearish']}↓ de {_conf_mtf['total']} TFs"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    if _snapshots:
+        _mtf_cols = st.columns(len(_snapshots))
+        for i, snap in enumerate(_snapshots):
+            with _mtf_cols[i]:
+                arrow = "🟢" if snap.direction == "bullish" else "🔴" if snap.direction == "bearish" else "⚪"
+                st.metric(snap.timeframe, f"{snap.cvd:+,.0f}", delta=snap.direction)
+                st.caption(f"{arrow} {snap.bars_used} barras")
+
+    # ── Guia de leitura ───────────────────────────────────────────────────────
     st.markdown("---")
+    with st.expander("📖 Como usar esta análise de confluência"):
+        st.markdown("""
+**Score mínimo** (configurável na sidebar, padrão = 4):
+- **≥ 4 factores alinhados** → confluência forte — setup de alta qualidade
+- **3 factores** → confluência moderada — usar com precaução
+- **≤ 2 factores** → sem confluência — aguardar melhores condições
 
-    # ── Signal type breakdown ─────────────────────────────────────────────────
-    st.markdown("#### Performance by Signal Type — Full History")
-    st.plotly_chart(render_signal_breakdown(_full_bt), use_container_width=True)
+**Factores incluídos (7 no total):**
+1. **Preço vs VWAP** — acima/abaixo do equilíbrio do dia
+2. **Preço vs POC** — acima/abaixo do nível de maior volume
+3. **Posição na Value Area** — bull/bear dentro da VA, breakout/breakdown fora
+4. **CVD direcção** — o fluxo de ordens está a crescer ou a decrescer?
+5. **CVD nível** — acumulação positiva ou negativa geral?
+6. **Delta da última barra** — quem dominou a última vela?
+7. **POC da sessão** — como estamos em relação ao POC da sessão actual?
 
-    # ── Trade scatter + log ───────────────────────────────────────────────────
-    st.markdown("#### All Trades — Full History")
-    st.plotly_chart(render_trades_scatter(_full_bt, bt_bars), use_container_width=True)
-
-    if _full_bt.trades:
-        st.markdown("#### Trade Log")
-        rows = []
-        for t in _full_bt.trades:
-            rows.append({
-                "Date":    datetime.fromtimestamp(t.signal.timestamp/1000).strftime("%Y-%m-%d %H:%M"),
-                "Signal":  t.signal.signal_type,
-                "Dir":     t.signal.direction.upper(),
-                "Entry":   f"{t.entry_price:,.2f}",
-                "Exit":    f"{t.exit_price:,.2f}",
-                "Reason":  t.exit_reason.upper(),
-                "PnL (€)": f"{t.pnl:+,.2f}",
-                "R":       f"{t.r_multiple:+.2f}",
-                "Conf":    f"{t.signal.confidence:.0%}",
-            })
-        df = pd.DataFrame(rows)
-        st.dataframe(df, use_container_width=True, height=350)
+**Regra prática:** Só consideres entrar quando ≥ 4 factores apontam na mesma direcção E o preço está perto de um nível-chave (VWAP, POC, VA High/Low).
+        """)
 
 # ── Auto-refresh ──────────────────────────────────────────────────────────────
 if _bybit_live:
