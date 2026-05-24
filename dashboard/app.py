@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
 from datetime import datetime
+import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
@@ -118,6 +119,38 @@ bt_history    = st.sidebar.slider(
          "2000 bars 1h ≈ 83 days ≈ ~120–180 trades."
 )
 
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Signal Filters**")
+_ALL_SIGNALS = [
+    "VA_BREAKOUT_BULL", "VA_BREAKOUT_BEAR",
+    "POC_RECLAIM_BULL", "POC_RECLAIM_BEAR",
+    "CVD_DIV_BULL",     "CVD_DIV_BEAR",
+    "VWAP_CROSS_BULL",  "VWAP_CROSS_BEAR",
+    "VWAP_BOUNCE_BULL", "VWAP_BOUNCE_BEAR",
+]
+# Default: disable the known underperformers (CVD_DIV_BEAR 25% WR, VWAP_BOUNCE negatives)
+_DEFAULT_SIGNALS = [
+    "VA_BREAKOUT_BULL", "VA_BREAKOUT_BEAR",
+    "POC_RECLAIM_BULL", "POC_RECLAIM_BEAR",
+    "CVD_DIV_BULL",
+    "VWAP_CROSS_BULL",  "VWAP_CROSS_BEAR",
+]
+enabled_signals = st.sidebar.multiselect(
+    "Active Signal Types",
+    _ALL_SIGNALS,
+    default=_DEFAULT_SIGNALS,
+    help=(
+        "Enable/disable individual signal types.\n\n"
+        "**VA_BREAKOUT**: best performer (80%/67% WR) — always keep.\n"
+        "**CVD_DIV_BEAR**: 25% WR with approximated data — disabled by default.\n"
+        "**VWAP_BOUNCE**: negative avg PnL — disabled by default."
+    ),
+)
+bt_min_conf = st.sidebar.slider(
+    "Min Signal Confidence", 0.50, 0.90, 0.60, step=0.05,
+    help="Signals below this threshold are discarded before backtest."
+)
+
 if not _bybit_live:
     auto_ref = st.sidebar.checkbox("Auto Refresh (60s)", value=False)
 else:
@@ -222,8 +255,11 @@ heatmap   = heatmap_from_bars(bars, tick_size)
 
 # Pre-compute signals — reuse already-loaded bars so no extra fetch
 @st.cache_data(ttl=120, show_spinner=False)
-def _compute_signals_cached(symbol, timeframe, limit, tick_size, rr, sl_mult, provider):
-    """Cached signal computation keyed by provider so Bybit/Yahoo stay separate."""
+def _compute_signals_cached(symbol, timeframe, limit, tick_size, rr, sl_mult, provider,
+                             enabled_signals_tuple=None, min_conf=0.60):
+    """Cached signal computation keyed by provider + active signal types."""
+    # Convert hashable tuple back to list (or None = all signals)
+    _enabled = list(enabled_signals_tuple) if enabled_signals_tuple else None
     if provider == "Bybit — REST (enriched)":
         from providers.bybit import BybitProvider
         b, _ = BybitProvider().fetch_bars_enriched(symbol, timeframe, limit)
@@ -232,17 +268,34 @@ def _compute_signals_cached(symbol, timeframe, limit, tick_size, rr, sl_mult, pr
         return None, None   # handled outside cache
     else:
         b = YFinanceProvider().fetch_bars_sync(symbol, timeframe, limit)
-    eng = SignalEngine(tick_size=tick_size, rr_ratio=rr, sl_atr_mult=sl_mult)
+    eng = SignalEngine(
+        tick_size       = tick_size,
+        rr_ratio        = rr,
+        sl_atr_mult     = sl_mult,
+        enabled_signals = _enabled,
+        min_confidence  = min_conf,
+    )
     return b, eng.detect(b)
+
+# Convert list → tuple (hashable) for cache key; None means all enabled
+_enabled_tuple = tuple(enabled_signals) if enabled_signals != _ALL_SIGNALS else None
 
 if _bybit_live:
     # Use the already-merged bars — no extra fetch needed
     sig_bars = bars
-    eng_sig  = SignalEngine(tick_size=tick_size, rr_ratio=bt_rr, sl_atr_mult=bt_sl_mult)
+    eng_sig  = SignalEngine(
+        tick_size       = tick_size,
+        rr_ratio        = bt_rr,
+        sl_atr_mult     = bt_sl_mult,
+        enabled_signals = list(_enabled_tuple) if _enabled_tuple else None,
+        min_confidence  = bt_min_conf,
+    )
     signals  = eng_sig.detect(sig_bars)
 else:
     _cached = _compute_signals_cached(
-        symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult, provider_choice
+        symbol, timeframe, bar_limit, tick_size, bt_rr, bt_sl_mult, provider_choice,
+        enabled_signals_tuple=_enabled_tuple,
+        min_conf=bt_min_conf,
     )
     sig_bars, signals = _cached if _cached[0] is not None else (bars, [])
 
@@ -536,7 +589,13 @@ with tab_bt:
 
     # ── Run signals on historical data ────────────────────────────────────────
     with st.spinner("Detecting signals on historical data…"):
-        _bt_eng  = SignalEngine(tick_size=tick_size, rr_ratio=bt_rr, sl_atr_mult=bt_sl_mult)
+        _bt_eng  = SignalEngine(
+            tick_size       = tick_size,
+            rr_ratio        = bt_rr,
+            sl_atr_mult     = bt_sl_mult,
+            enabled_signals = list(_enabled_tuple) if _enabled_tuple else None,
+            min_confidence  = bt_min_conf,
+        )
         bt_sigs  = _bt_eng.detect(bt_bars)
 
     # Date range of the backtest data
