@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
 from datetime import datetime
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -210,9 +211,48 @@ sessions  = calculate_sessions(bars, tick_size)
 cur_sess  = get_current_sessions(sessions)
 heatmap   = heatmap_from_bars(bars, tick_size)
 
+# ── Detecção de volume anómalo ────────────────────────────────────────────────
+
+def _detect_vol_anomalies(bars, window: int = 20, threshold: float = 2.0) -> list[dict]:
+    """
+    Detecta barras com volume institucional: volume > mean + threshold × std.
+    Janela deslizante de `window` barras para calcular a base.
+    Retorna lista de dicts com idx, timestamp, z_score, ratio, direcção.
+    """
+    vols      = np.array([b.volume for b in bars], dtype=float)
+    anomalies = []
+    for i in range(window, len(bars)):
+        w    = vols[i - window: i]
+        mean = w.mean()
+        std  = w.std()
+        if std < 1e-9:
+            continue
+        z = (vols[i] - mean) / std
+        if z >= threshold:
+            b       = bars[i]
+            delta   = b.buy_volume - b.sell_volume
+            direction = "bull" if delta > 0 else "bear" if delta < 0 else "neutral"
+            anomalies.append({
+                "idx":       i,
+                "ts":        datetime.fromtimestamp(b.timestamp / 1000),
+                "price_lo":  b.low,
+                "price_hi":  b.high,
+                "price_cl":  b.close,
+                "volume":    b.volume,
+                "z_score":   round(z, 2),
+                "ratio":     round(vols[i] / mean, 2),   # ×média
+                "direction": direction,
+                "delta":     delta,
+            })
+    return anomalies
+
+# Calcular anomalias (janela=20, limiar=2σ)
+vol_anomalies = _detect_vol_anomalies(bars, window=20, threshold=2.0)
+
 # ── Função de confluência ─────────────────────────────────────────────────────
 
-def _calc_confluence(bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars):
+def _calc_confluence(bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars,
+                     vol_anomalies=None):
     """
     Calcula score de confluência para o último bar.
     Retorna (bull_factors, bear_factors) como listas de strings.
@@ -280,7 +320,21 @@ def _calc_confluence(bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, con
         else:
             bear.append(f"Delta negativo na última barra ({last_delta:+,.0f})")
 
-    # 7. POC da sessão
+    # 7. Volume anómalo nas últimas 3 barras
+    if vol_anomalies:
+        recent = [a for a in vol_anomalies if a["idx"] >= len(bars) - 3]
+        for a in recent:
+            z   = a["z_score"]
+            rat = a["ratio"]
+            if a["direction"] == "bull":
+                bull.append(f"🚨 Volume institucional BULL ({rat:.1f}× média, z={z:.1f}σ)")
+            elif a["direction"] == "bear":
+                bear.append(f"🚨 Volume institucional BEAR ({rat:.1f}× média, z={z:.1f}σ)")
+            else:
+                bull.append(f"⚠️ Volume anómalo neutro ({rat:.1f}× média, z={z:.1f}σ)")
+                bear.append(f"⚠️ Volume anómalo neutro ({rat:.1f}× média, z={z:.1f}σ)")
+
+    # 8. POC da sessão
     if cur_sess:
         for sess in cur_sess:
             if sess.poc:
@@ -305,7 +359,8 @@ with tab_main:
 
     # ── Score de confluência (calculado antes dos KPIs) ───────────────────────
     _bull_f, _bear_f = _calc_confluence(
-        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars
+        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars,
+        vol_anomalies=vol_anomalies,
     )
     _score_bull = len(_bull_f)
     _score_bear = len(_bear_f)
@@ -457,6 +512,43 @@ with tab_main:
                               fillcolor=SESSION_COLORS.get(sess.name, "rgba(255,255,255,0.05)"),
                               line_width=0, row=1, col=1)
 
+    # ── Marcadores de volume anómalo no gráfico ───────────────────────────────
+    if vol_anomalies:
+        _ts_anom  = [a["ts"]       for a in vol_anomalies]
+        _lo_anom  = [a["price_lo"] for a in vol_anomalies]
+        _hi_anom  = [a["price_hi"] for a in vol_anomalies]
+        _dir_anom = [a["direction"] for a in vol_anomalies]
+        _txt_anom = [
+            f"🚨 Vol ×{a['ratio']:.1f} (z={a['z_score']:.1f}σ)<br>"
+            f"Delta: {a['delta']:+,.0f} | {a['direction'].upper()}"
+            for a in vol_anomalies
+        ]
+        # Marcador abaixo das barras bull, acima das bear
+        _y_anom  = [lo * 0.9995 if d != "bear" else hi * 1.0005
+                    for lo, hi, d in zip(_lo_anom, _hi_anom, _dir_anom)]
+        _sym_anom = ["triangle-up"   if d == "bull" else
+                     "triangle-down" if d == "bear" else "diamond"
+                     for d in _dir_anom]
+        _col_anom = ["#00e676" if d == "bull" else
+                     "#ff1744" if d == "bear" else "#ffab00"
+                     for d in _dir_anom]
+        _sz_anom  = [min(8 + a["z_score"] * 3, 22) for a in vol_anomalies]
+
+        fig.add_trace(go.Scatter(
+            x=_ts_anom, y=_y_anom,
+            mode="markers",
+            marker=dict(
+                symbol=_sym_anom,
+                color=_col_anom,
+                size=_sz_anom,
+                line=dict(width=1, color="white"),
+            ),
+            name="Vol Anómalo",
+            hovertext=_txt_anom,
+            hoverinfo="text+x",
+            showlegend=True,
+        ), row=1, col=1)
+
     fig.update_layout(
         title=f"{symbol}  ·  {timeframe}",
         template="plotly_dark", height=520,
@@ -478,19 +570,45 @@ with tab_main:
                            height=180, margin=dict(l=0,r=0,t=40,b=0))
     st.plotly_chart(fig_cvd, use_container_width=True)
 
-    # ── Buy / Sell Volume (largura total — VP já está no gráfico principal) ──
+    # ── Buy / Sell Volume (barras anómalas destacadas) ───────────────────────
+    _anom_idxs = {a["idx"] for a in vol_anomalies}
+    _buy_colors  = [
+        "#00e676" if i in _anom_idxs else "#26a69a"
+        for i in range(len(bars))
+    ]
+    _sell_colors = [
+        "#ff1744" if i in _anom_idxs else "#ef5350"
+        for i in range(len(bars))
+    ]
     fig_vol = go.Figure()
     fig_vol.add_trace(go.Bar(x=timestamps, y=buy_vols,
-                             name="Buy",  marker_color="#26a69a"))
+                             name="Buy",  marker_color=_buy_colors))
     fig_vol.add_trace(go.Bar(x=timestamps, y=[-v for v in sell_vols],
-                             name="Sell", marker_color="#ef5350"))
+                             name="Sell", marker_color=_sell_colors))
     fig_vol.update_layout(
-        barmode="relative", title="Buy / Sell Volume",
+        barmode="relative", title="Buy / Sell Volume  (brilhante = volume anómalo ≥ 2σ)",
         template="plotly_dark", height=200,
         margin=dict(l=0, r=0, t=36, b=0),
         legend=dict(orientation="h", yanchor="bottom", y=1.01, x=0),
     )
     st.plotly_chart(fig_vol, use_container_width=True)
+
+    # ── Tabela de volume anómalo detectado ────────────────────────────────────
+    if vol_anomalies:
+        st.markdown("---")
+        st.markdown(f"#### 🚨 Volume Institucional Detectado — {len(vol_anomalies)} barras")
+        _rows = []
+        for a in reversed(vol_anomalies[-10:]):   # últimas 10
+            _rows.append({
+                "Hora":      a["ts"].strftime("%H:%M"),
+                "Direcção":  "🟢 BULL" if a["direction"]=="bull" else "🔴 BEAR" if a["direction"]=="bear" else "⚪ NEUTRO",
+                "Volume":    f"{a['volume']:,.0f}",
+                "×Média":    f"{a['ratio']:.1f}×",
+                "Z-Score":   f"{a['z_score']:.1f}σ",
+                "Delta":     f"{a['delta']:+,.0f}",
+                "Preço":     f"{a['price_cl']:,.2f}",
+            })
+        st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
 
     # ── Nota de sessões (detalhes no tab Confluência) ─────────────────────────
     if cur_sess:
@@ -637,7 +755,8 @@ with tab_conf:
 
     # ── Score principal ───────────────────────────────────────────────────────
     _bull_fc, _bear_fc = _calc_confluence(
-        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars
+        bars, closes, cvds, vwaps, poc, va_lo, va_hi, cur_sess, conf_cvd_bars,
+        vol_anomalies=vol_anomalies,
     )
     _sb = len(_bull_fc)
     _se = len(_bear_fc)
