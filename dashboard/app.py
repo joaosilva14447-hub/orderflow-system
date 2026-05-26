@@ -351,74 +351,121 @@ with tab_main:
     )
     st.markdown("---")
 
-    # ── Candlestick + VWAP + Sessions ────────────────────────────────────────
-    fig = go.Figure()
+    # ── Candlestick + VWAP + Sessions + Volume Profile overlay ──────────────
+    # Volume Profile: calcular cores antes de criar o subplot
+    _profile  = engine.profile.to_dict()
+    _pvp      = sorted(_profile.keys()) if _profile else []
+    _vol_vals = [_profile[p]["total"] for p in _pvp]
+    _vp_w     = tick_size * 0.92   # largura de cada barra VP (em unidades de preço)
 
+    _vp_colors = []
+    for p in _pvp:
+        d      = _profile[p]["delta"]
+        is_poc = poc and abs(p - poc) < tick_size * 0.5
+        in_va  = va_lo and va_hi and va_lo <= p <= va_hi
+        if is_poc:
+            _vp_colors.append("rgba(255,215,0,0.95)")          # POC — dourado
+        elif in_va:
+            _vp_colors.append("rgba(38,166,154,0.70)" if d >= 0
+                               else "rgba(239,83,80,0.70)")     # VA — saturado
+        else:
+            _vp_colors.append("rgba(38,166,154,0.28)" if d >= 0
+                               else "rgba(239,83,80,0.28)")     # Fora da VA — transparente
+
+    # Subplot: candlestick (82%) | VP (18%), eixo Y partilhado
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.82, 0.18],
+        shared_yaxes=True,
+        horizontal_spacing=0.004,
+    )
+
+    # ── Candlestick ──────────────────────────────────────────────────────────
     fig.add_trace(go.Candlestick(
         x=timestamps, open=[b.open for b in bars],
         high=[b.high for b in bars], low=[b.low for b in bars],
         close=closes, name="Price",
         increasing_line_color="#26a69a", decreasing_line_color="#ef5350",
-    ))
+    ), row=1, col=1)
 
-    # Volume Profile levels
+    # ── Volume Profile (col 2) ───────────────────────────────────────────────
+    if _pvp:
+        fig.add_trace(go.Bar(
+            x=_vol_vals, y=_pvp,
+            orientation="h",
+            marker_color=_vp_colors,
+            marker_line_width=0,
+            width=_vp_w,
+            name="VP",
+            showlegend=False,
+            hovertemplate="Preço: %{y:,.2f}<br>Volume: %{x:,.0f}<extra>VP</extra>",
+        ), row=1, col=2)
+
+    # ── POC e VA (col 1 — linha e zona) ──────────────────────────────────────
     if poc:
-        fig.add_hline(y=poc, line_dash="dash", line_color="yellow",
-                      annotation_text="POC", annotation_position="left")
+        fig.add_hline(y=poc, line_dash="dash",
+                      line_color="rgba(255,215,0,0.85)", line_width=1,
+                      annotation_text="POC", annotation_position="left",
+                      row=1, col=1)
     if va_lo and va_hi:
-        fig.add_hrect(y0=va_lo, y1=va_hi, fillcolor="rgba(100,100,255,0.07)",
-                      line_width=0, annotation_text=f"VA {int(va_pct*100)}%")
+        fig.add_hrect(y0=va_lo, y1=va_hi,
+                      fillcolor="rgba(100,100,255,0.06)", line_width=0,
+                      row=1, col=1)
 
-    # VWAP
+    # ── VWAP ─────────────────────────────────────────────────────────────────
     if show_vwap and vwaps:
         fig.add_trace(go.Scatter(
             x=timestamps, y=vwaps, name="VWAP",
-            line=dict(color="rgba(255,255,255,0.9)", width=1.5, dash="solid"),
-        ))
+            line=dict(color="rgba(255,255,255,0.9)", width=1.5),
+        ), row=1, col=1)
 
-    # SD Bands
+    # ── SD Bands ─────────────────────────────────────────────────────────────
     if show_bands and vwap_bands:
-        band_colors = {1: "rgba(100,200,255,0.6)", 2: "rgba(100,200,255,0.4)", 3: "rgba(100,200,255,0.25)"}
+        _band_colors = {1: "rgba(100,200,255,0.6)", 2: "rgba(100,200,255,0.4)", 3: "rgba(100,200,255,0.25)"}
         for i in range(1, n_bands + 1):
-            col = band_colors.get(i, "rgba(100,200,255,0.3)")
+            _bc = _band_colors.get(i, "rgba(100,200,255,0.3)")
             fig.add_trace(go.Scatter(
                 x=timestamps, y=vwap_bands[f"+{i}"], name=f"+{i}σ",
-                line=dict(color=col, width=1, dash="dot"), showlegend=(i == 1),
-            ))
+                line=dict(color=_bc, width=1, dash="dot"), showlegend=(i == 1),
+            ), row=1, col=1)
             fig.add_trace(go.Scatter(
                 x=timestamps, y=vwap_bands[f"-{i}"], name=f"-{i}σ",
-                line=dict(color=col, width=1, dash="dot"),
+                line=dict(color=_bc, width=1, dash="dot"),
                 fill="tonexty" if i > 1 else None,
-                fillcolor=f"rgba(100,200,255,{0.03 * i})",
+                fillcolor=f"rgba(100,200,255,{0.03*i})",
                 showlegend=False,
-            ))
+            ), row=1, col=1)
 
-    # Session POC/VA lines
+    # ── Sessões ───────────────────────────────────────────────────────────────
     if show_sessions and cur_sess:
         for sess in cur_sess:
-            col  = SESSION_LINE_COLORS.get(sess.name, "white")
+            _sc  = SESSION_LINE_COLORS.get(sess.name, "white")
             ts_s = datetime.fromtimestamp(sess.start_ts / 1000)
             ts_e = datetime.fromtimestamp(sess.end_ts   / 1000)
-
             if sess.poc:
-                fig.add_shape(type="line", x0=ts_s, x1=ts_e, y0=sess.poc, y1=sess.poc,
-                              line=dict(color=col, width=1.5, dash="dash"),
-                              xref="x", yref="y")
+                fig.add_shape(type="line",
+                              x0=ts_s, x1=ts_e, y0=sess.poc, y1=sess.poc,
+                              line=dict(color=_sc, width=1.5, dash="dash"),
+                              row=1, col=1)
                 fig.add_annotation(x=ts_e, y=sess.poc,
                                    text=f"{sess.name} POC {sess.poc:,.0f}",
-                                   font=dict(color=col, size=10),
-                                   showarrow=False, xanchor="left")
+                                   font=dict(color=_sc, size=10),
+                                   showarrow=False, xanchor="left",
+                                   row=1, col=1)
             if sess.va_high and sess.va_low:
                 fig.add_hrect(y0=sess.va_low, y1=sess.va_high,
                               fillcolor=SESSION_COLORS.get(sess.name, "rgba(255,255,255,0.05)"),
-                              line_width=0)
+                              line_width=0, row=1, col=1)
 
     fig.update_layout(
         title=f"{symbol}  ·  {timeframe}",
-        xaxis_rangeslider_visible=False,
-        template="plotly_dark", height=480,
+        template="plotly_dark", height=520,
         margin=dict(l=0, r=0, t=40, b=0),
-        legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        xaxis =dict(rangeslider_visible=False),
+        xaxis2=dict(showticklabels=False, showgrid=False, fixedrange=True,
+                    title_text="Volume"),
+        yaxis =dict(showgrid=True, gridcolor="rgba(255,255,255,0.04)"),
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -431,29 +478,19 @@ with tab_main:
                            height=180, margin=dict(l=0,r=0,t=40,b=0))
     st.plotly_chart(fig_cvd, use_container_width=True)
 
-    # ── Buy/Sell + Volume Profile ─────────────────────────────────────────────
-    col_a, col_b = st.columns(2)
-    with col_a:
-        fig_vol = go.Figure()
-        fig_vol.add_trace(go.Bar(x=timestamps, y=buy_vols,  name="Buy",  marker_color="#26a69a"))
-        fig_vol.add_trace(go.Bar(x=timestamps, y=[-v for v in sell_vols], name="Sell", marker_color="#ef5350"))
-        fig_vol.update_layout(barmode="relative", title="Buy / Sell Volume",
-                               template="plotly_dark", height=240, margin=dict(l=0,r=0,t=40,b=0))
-        st.plotly_chart(fig_vol, use_container_width=True)
-    with col_b:
-        profile = engine.profile.to_dict()
-        if profile:
-            pvp = sorted(profile.keys())
-            fig_vp = go.Figure()
-            fig_vp.add_trace(go.Bar(
-                x=[profile[p]["total"] for p in pvp], y=pvp, orientation="h",
-                marker_color=["#26a69a" if profile[p]["delta"] >= 0 else "#ef5350" for p in pvp],
-            ))
-            if poc:   fig_vp.add_hline(y=poc, line_dash="dash", line_color="yellow")
-            if va_lo: fig_vp.add_hrect(y0=va_lo, y1=va_hi, fillcolor="rgba(100,100,255,0.07)", line_width=0)
-            fig_vp.update_layout(title="Volume Profile", template="plotly_dark",
-                                  height=240, margin=dict(l=0,r=0,t=40,b=0))
-            st.plotly_chart(fig_vp, use_container_width=True)
+    # ── Buy / Sell Volume (largura total — VP já está no gráfico principal) ──
+    fig_vol = go.Figure()
+    fig_vol.add_trace(go.Bar(x=timestamps, y=buy_vols,
+                             name="Buy",  marker_color="#26a69a"))
+    fig_vol.add_trace(go.Bar(x=timestamps, y=[-v for v in sell_vols],
+                             name="Sell", marker_color="#ef5350"))
+    fig_vol.update_layout(
+        barmode="relative", title="Buy / Sell Volume",
+        template="plotly_dark", height=200,
+        margin=dict(l=0, r=0, t=36, b=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.01, x=0),
+    )
+    st.plotly_chart(fig_vol, use_container_width=True)
 
     # ── Nota de sessões (detalhes no tab Confluência) ─────────────────────────
     if cur_sess:
