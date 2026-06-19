@@ -248,9 +248,17 @@ def render_footprint_summary(footprints: list[FootprintBar]) -> go.Figure:
         fill="tozeroy", fillcolor=_rgba(*RED, 0.1),
     ))
     fig.update_layout(
-        title    = "Cumulative Buy vs Sell Pressure",
         template = "plotly_dark",
-        height   = 220,
-        margin   = dict(l=0, r=0, t=40, b=0),
+        height   = 200,
+        margin   = dict(l=0, r=0, t=6, b=0),
+        legend=dict(
+            orientation="v",
+            x=0.01, y=0.99,
+            xanchor="left", yanchor="top",
+            bgcolor="rgba(17,17,17,0.72)",
+            bordercolor="rgba(255,255,255,0.12)",
+            borderwidth=1,
+            font=dict(size=11),
+        ),
     )
     return fig
