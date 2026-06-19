@@ -121,6 +121,57 @@ def resample_weekly(dates: list[date], prices: np.ndarray) -> tuple[list[date], 
     return [d for d, _ in items], np.array([p for _, p in items], dtype=float)
 
 
+def fetch_onchain_mvrv() -> tuple[list[date], np.ndarray]:
+    """
+    MVRV diário do BTC via Coin Metrics Community API (grátis, sem chave).
+    Métrica CapMVRVCur = market cap / realized cap. Levanta exceção se falhar.
+    """
+    import time
+    import requests
+
+    url = "https://community-api.coinmetrics.io/v4/timeseries/asset-metrics"
+    params = {"assets": "btc", "metrics": "CapMVRVCur",
+              "frequency": "1d", "page_size": 10000}
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        try:
+            r = requests.get(url, params=params, timeout=30)
+            r.raise_for_status()
+            dts, vals = [], []
+            for row in r.json().get("data", []):
+                v = row.get("CapMVRVCur")
+                if v in (None, ""):
+                    continue
+                try:
+                    dts.append(date.fromisoformat(str(row["time"])[:10]))
+                    vals.append(float(v))
+                except (ValueError, KeyError):
+                    continue
+            if len(vals) > 50:
+                return dts, np.array(vals, dtype=float)
+            raise ValueError("MVRV: poucos dados")
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt < 2:
+                time.sleep(1.5 * (attempt + 1))
+    raise last_exc if last_exc else RuntimeError("Coin Metrics sem resposta")
+
+
+def align_series(target_dates: list[date], src_dates: list[date],
+                 src_vals: np.ndarray) -> np.ndarray:
+    """Alinha uma série (src) às datas alvo por 'as-of' (último valor conhecido)."""
+    import bisect
+    pairs = sorted(zip(src_dates, src_vals))
+    sd = [p[0] for p in pairs]
+    sv = [p[1] for p in pairs]
+    out = np.full(len(target_dates), np.nan)
+    for i, td in enumerate(target_dates):
+        j = bisect.bisect_right(sd, td) - 1
+        if j >= 0:
+            out[i] = sv[j]
+    return out
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Camada 1 — as NOSSAS primitivas (todas: alto = caro/overbought)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -263,8 +314,26 @@ class Valuation:
     conviction: np.ndarray                 # 0..1 (concordância das primitivas)
 
 
+def _ema_ignore_nan(x: np.ndarray, span: int) -> np.ndarray:
+    """EMA que ignora o aquecimento (NaN inicial). span<=1 → sem suavização."""
+    if not span or span <= 1:
+        return x
+    alpha = 2.0 / (span + 1.0)
+    out = x.copy()
+    prev = None
+    for i in range(len(x)):
+        if np.isnan(x[i]):
+            out[i] = np.nan
+            continue
+        prev = x[i] if prev is None else alpha * x[i] + (1 - alpha) * prev
+        out[i] = prev
+    return out
+
+
 def compute_series(dates: list[date], prices: np.ndarray,
-                   periods_per_year: int, halflife_years: float = 2.0) -> Valuation:
+                   periods_per_year: int, halflife_years: float = 2.0,
+                   extra_raw: dict | None = None,
+                   smooth_span: int | None = None) -> Valuation:
     ppy = periods_per_year
     fast = max(2, round(ppy / 3))   # ~4 meses
     slow = max(fast + 1, ppy)       # ~1 ano
@@ -276,19 +345,24 @@ def compute_series(dates: list[date], prices: np.ndarray,
         "issuance_value": prim_issuance_value(dates, prices, ppy),
         "ma_spread": prim_ma_spread(prices, fast, slow),
     }
+    if extra_raw:
+        raw.update(extra_raw)   # primitivas extra (ex.: MVRV on-chain) já alinhadas
     halflife = halflife_years * ppy
     pct = {k: pct_rank_decayed(v, halflife) for k, v in raw.items()}
+    keys = list(raw.keys())
 
     composite = np.full(len(prices), np.nan)
     conviction = np.full(len(prices), np.nan)
     for i in range(len(prices)):
-        vals = [pct[k][i] for k in WEIGHTS if not np.isnan(pct[k][i])]
+        vals = [pct[k][i] for k in keys if not np.isnan(pct[k][i])]
         if not vals:
             continue
-        # Pesos iguais → média simples dos percentis disponíveis.
-        composite[i] = 100.0 * float(np.mean(vals))
-        # Convicção: quão alinhadas estão as primitivas (baixa dispersão = alta).
+        composite[i] = 100.0 * float(np.mean(vals))   # pesos iguais (anti-overfit)
         conviction[i] = max(0.0, 1.0 - 2.0 * float(np.std(vals)))
+
+    if smooth_span is None:
+        smooth_span = max(1, round(ppy / 13))   # ~4 semanas — tira o serrilhado
+    composite = _ema_ignore_nan(composite, smooth_span)
     return Valuation(dates=dates, composite=composite,
                      primitives_pct=pct, conviction=conviction)
 
