@@ -83,20 +83,22 @@ c4.metric("Convicção", f"{conv_label} ({conv * 100:.0f}%)")
 
 fig = make_subplots(specs=[[{"secondary_y": True}]])
 # 2 zonas claras: verde em baixo (sobrevendido), vermelho em cima (sobrecomprado)
-fig.add_hrect(y0=0, y1=OVERSOLD_MAX, fillcolor="rgba(40,200,120,0.16)",
-              line_width=0, secondary_y=False)
-fig.add_hrect(y0=OVERBOUGHT_MIN, y1=100, fillcolor="rgba(226,75,74,0.16)",
-              line_width=0, secondary_y=False)
-fig.add_hline(y=OVERSOLD_MAX, line=dict(color="rgba(40,200,120,0.7)", width=1, dash="dash"),
+fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
+              y0=OVERBOUGHT_MIN, y1=100, fillcolor="#A93226", opacity=0.33,
+              line_width=0, layer="below")
+fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
+              y0=0, y1=OVERSOLD_MAX, fillcolor="#1E8449", opacity=0.33,
+              line_width=0, layer="below")
+fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color="#CB4335", width=1.3, dash="dash"),
               secondary_y=False)
-fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color="rgba(226,75,74,0.7)", width=1, dash="dash"),
+fig.add_hline(y=OVERSOLD_MAX, line=dict(color="#27AE60", width=1.3, dash="dash"),
               secondary_y=False)
-fig.add_annotation(xref="paper", x=0.01, y=92, yref="y", xanchor="left",
+fig.add_annotation(xref="paper", x=0.012, y=93, yref="y", xanchor="left",
                    text="SOBRECOMPRADO — realizar", showarrow=False,
-                   font=dict(color="#E24B4A", size=11))
-fig.add_annotation(xref="paper", x=0.01, y=8, yref="y", xanchor="left",
+                   font=dict(color="#F1948A", size=12))
+fig.add_annotation(xref="paper", x=0.012, y=7, yref="y", xanchor="left",
                    text="SOBREVENDIDO — acumular", showarrow=False,
-                   font=dict(color="#28C878", size=11))
+                   font=dict(color="#7DCEA0", size=12))
 
 fig.add_trace(go.Scatter(x=dates, y=val.composite, name="Valorização (0–100)",
                          line=dict(color="#7F77DD", width=2.5)), secondary_y=False)
