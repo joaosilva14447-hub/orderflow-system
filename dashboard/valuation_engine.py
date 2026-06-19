@@ -63,10 +63,31 @@ def daily_issuance_btc(d: date) -> float:
 # ─────────────────────────────────────────────────────────────────────────────
 def fetch_btc_history() -> tuple[list[date], np.ndarray]:
     """
-    Histórico diário máximo do BTC (CoinGecko). AUTO-CONTIDO: usa só requests
-    (com pequenas re-tentativas), para o módulo ser portável a qualquer projeto.
-    Sem 'interval' (parâmetro pago): para days=max a CoinGecko já devolve diário.
+    Histórico diário máximo do BTC. Fontes por ordem de fiabilidade:
+      1) yfinance (BTC-USD) — fiável, sem limite 429, histórico desde ~2014.
+      2) CoinGecko (days=max) — fallback (pode dar 429 em IPs partilhados).
+    Auto-contido: imports tardios, cada fonte é opcional.
     """
+    # 1) yfinance — preferido (e já é dependência da dashboard).
+    try:
+        import yfinance as yf
+        df = yf.download("BTC-USD", period="max", interval="1d",
+                         progress=False, auto_adjust=True)
+        if df is not None and len(df) > 50:
+            close = df["Close"]
+            if hasattr(close, "columns"):      # MultiIndex → 1.ª coluna
+                close = close.iloc[:, 0]
+            dts = [d.date() for d in close.index]
+            prc = np.asarray(close.values, dtype=float)
+            mask = ~np.isnan(prc)
+            dts = [d for d, m in zip(dts, mask) if m]
+            prc = prc[mask]
+            if len(prc) > 50:
+                return dts, prc
+    except Exception as exc:  # noqa: BLE001
+        log.info("yfinance indisponível (%s). A tentar CoinGecko…", exc)
+
+    # 2) CoinGecko — fallback (sem 'interval', que é pago; days=max já dá diário).
     import time
     import requests
 

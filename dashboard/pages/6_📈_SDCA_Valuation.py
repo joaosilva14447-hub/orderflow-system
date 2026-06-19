@@ -91,7 +91,9 @@ for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
 fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100], secondary_y=False)
-fig.update_yaxes(title_text="Preço BTC (log, USD)", type="log", secondary_y=True, showgrid=False)
+fig.update_yaxes(title_text="Preço BTC (log, USD)", type="log", secondary_y=True,
+                 showgrid=False, tickvals=[100, 1000, 10000, 100000],
+                 ticktext=["100", "1k", "10k", "100k"], minor=dict(ticks="", showgrid=False))
 fig.update_layout(height=560, margin=dict(l=10, r=10, t=30, b=10),
                   legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
                   hovermode="x unified", template="plotly_white")
