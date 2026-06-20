@@ -74,10 +74,10 @@ def zone_color(s: float) -> str:
 
 def card_html(label: str, value: str, accent: str) -> str:
     return (f'<div style="background:rgba(255,255,255,0.04);border-left:4px solid '
-            f'{accent};border-radius:10px;padding:14px 16px;height:100%;">'
-            f'<div style="font-size:12px;color:#9aa0a6;text-transform:uppercase;'
+            f'{accent};border-radius:10px;padding:13px 16px;height:100%;">'
+            f'<div style="font-size:11px;color:#9aa0a6;text-transform:uppercase;'
             f'letter-spacing:.6px;">{label}</div>'
-            f'<div style="font-size:23px;font-weight:600;color:#eaecef;margin-top:6px;'
+            f'<div style="font-size:22px;font-weight:600;color:#eaecef;margin-top:5px;'
             f'line-height:1.15;">{value}</div></div>')
 
 
@@ -89,24 +89,34 @@ conv = float(val.conviction[i]) if not np.isnan(val.conviction[i]) else 0.0
 conv_label = "Alta" if conv >= 0.6 else ("Média" if conv >= 0.3 else "Baixa")
 accent = zone_color(score)
 conv_accent = "#3498DB" if conv >= 0.6 else ("#95A5A6" if conv >= 0.3 else "#7F8C8D")
+dot = "🟢" if score < 35 else ("🔴" if score >= OVERBOUGHT_MIN else
+                               ("🟠" if score >= 65 else "⚪"))
 
 st.title("📈 SDCA Valuation Oscillator")
 oc = "MVRV on-chain ✓" if onchain else "MVRV on-chain indisponível"
 st.caption(f"Valorização de longo prazo do BTC (0–100) para SDCA — extremos de "
            f"ciclo. {source} · {oc}")
 
-# ── Topo: gauge (esquerda) + cartões (direita) ───────────────────────────────
+# ── Faixa de sinal (verdito num relance) ─────────────────────────────────────
+st.markdown(
+    f'<div style="background:{accent}22;border-left:5px solid {accent};'
+    f'border-radius:10px;padding:12px 18px;font-size:16px;color:#eaecef;'
+    f'margin-bottom:14px;">{dot} &nbsp;<b style="color:{accent};">{action}</b> '
+    f'— zona <b>{label}</b> · score <b>{score:.0f}/100</b> · convicção '
+    f'<b>{conv_label}</b> ({conv * 100:.0f}%)</div>',
+    unsafe_allow_html=True)
+
+# ── Leitura atual: gauge + cartões ───────────────────────────────────────────
 gcol, ccol = st.columns([1, 2])
 gauge = go.Figure(go.Indicator(
     mode="gauge+number",
     value=round(score),
-    number={"suffix": "/100", "font": {"size": 34, "color": "#eaecef"}},
-    title={"text": "Score de valorização", "font": {"size": 13, "color": "#9aa0a6"}},
+    number={"suffix": "/100", "font": {"size": 30, "color": "#eaecef"}},
     gauge={
-        "axis": {"range": [0, 100], "tickvals": [0, 20, 50, 80, 100],
-                 "tickcolor": "#9aa0a6"},
+        "axis": {"range": [0, 100], "tickvals": [0, 20, 50, 80, 100], "tickcolor": "#9aa0a6"},
         "bar": {"color": "#5D4FB0", "thickness": 0.28},
         "bgcolor": "rgba(0,0,0,0)",
+        "borderwidth": 0,
         "steps": [
             {"range": [0, OVERSOLD_MAX], "color": "rgba(39,174,96,0.55)"},
             {"range": [OVERSOLD_MAX, OVERBOUGHT_MIN], "color": "rgba(140,140,150,0.16)"},
@@ -116,19 +126,22 @@ gauge = go.Figure(go.Indicator(
                       "value": round(score)},
     },
 ))
-gauge.update_layout(height=230, margin=dict(l=25, r=25, t=40, b=10),
+gauge.update_layout(height=250, margin=dict(l=30, r=30, t=20, b=20),
                     paper_bgcolor="rgba(0,0,0,0)", font={"color": "#cfd2d6"})
 gcol.plotly_chart(gauge, use_container_width=True)
 
 ccol.markdown(
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;height:230px;">'
     + card_html("Zona", label, accent)
     + card_html("Ação SDCA", action, accent)
     + card_html("Convicção", f"{conv_label} ({conv * 100:.0f}%)", conv_accent)
-    + card_html("Fonte", "MVRV ✓" if onchain else "preço", "#5D4FB0")
+    + card_html("Fonte de dados", "Preço + MVRV ✓" if onchain else "Preço", "#5D4FB0")
     + '</div>', unsafe_allow_html=True)
 
-# ── Oscilador (com preenchimento + etiqueta do valor atual) ──────────────────
+st.divider()
+
+# ── Histórico do ciclo ───────────────────────────────────────────────────────
+st.subheader("Histórico do ciclo")
 fig = go.Figure()
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
               y0=OVERBOUGHT_MIN, y1=100, fillcolor="#A93226", opacity=0.33,
@@ -156,12 +169,14 @@ for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
 fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100])
-fig.update_layout(height=500, margin=dict(l=10, r=10, t=20, b=10),
+fig.update_layout(height=480, margin=dict(l=10, r=10, t=10, b=10),
                   hovermode="x unified", template="plotly_white")
 st.plotly_chart(fig, use_container_width=True)
 
-# ── Decomposição (barras coloridas por valor + referência a 50) ──────────────
-st.subheader("Decomposição — percentil de cada primitiva (hoje)")
+st.divider()
+
+# ── Decomposição ─────────────────────────────────────────────────────────────
+st.subheader("Decomposição — o que está a puxar o score (hoje)")
 names = {
     "trend_deviation": "Desvio lei de potência",
     "long_ma_ratio": "Rácio MA longa",
@@ -193,6 +208,8 @@ bar.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
                   yaxis=dict(title="Percentil (0–100)", range=[0, 105]),
                   template="plotly_white")
 st.plotly_chart(bar, use_container_width=True)
+st.caption("Verde = baixo percentil (barato) · vermelho = alto (caro). "
+           "Linha a 50 = mediana histórica.")
 
 st.caption("Pesos iguais + normalização com decaimento (2 anos) + suavização — "
            "anti-overfit. NÃO é aconselhamento financeiro.")
