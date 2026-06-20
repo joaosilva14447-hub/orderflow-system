@@ -8,6 +8,7 @@ Anti-overfit: pesos iguais + normalização por percentil com decaimento (2 anos
 """
 from __future__ import annotations
 
+import math
 import sys
 import os
 sys.path.insert(
@@ -18,18 +19,23 @@ sys.path.insert(
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 from dashboard import valuation_engine as ve
 
-st.set_page_config(
-    page_title="SDCA Valuation Oscillator",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+st.set_page_config(page_title="SDCA Valuation Oscillator", page_icon="📈",
+                   layout="wide", initial_sidebar_state="expanded")
 
 OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
 OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
+
+# Paleta moderna e coesa (Tailwind): esmeralda · rosa · azul-céu · slate
+C_GREEN = "#10B981"
+C_RED = "#F43F5E"
+C_LINE = "#38BDF8"
+C_NEUTRAL = "#94A3B8"
+C_GREEN_SOFT = "#34D399"
+C_RED_SOFT = "#FB7185"
 
 
 @st.cache_data(ttl=3600)
@@ -62,14 +68,14 @@ def _last_valid(arr: np.ndarray) -> int:
 
 def zone_color(s: float) -> str:
     if s < OVERSOLD_MAX:
-        return "#27AE60"
+        return C_GREEN
     if s < 35:
-        return "#58D68D"
+        return C_GREEN_SOFT
     if s < 65:
-        return "#95A5A6"
+        return C_NEUTRAL
     if s < OVERBOUGHT_MIN:
-        return "#E59866"
-    return "#CB4335"
+        return "#FB923C"
+    return C_RED
 
 
 def card_html(label: str, value: str, accent: str) -> str:
@@ -79,6 +85,46 @@ def card_html(label: str, value: str, accent: str) -> str:
             f'letter-spacing:.6px;">{label}</div>'
             f'<div style="font-size:22px;font-weight:600;color:#eaecef;margin-top:5px;'
             f'line-height:1.15;">{value}</div></div>')
+
+
+# ── Gauge SVG personalizado (arco premium + ponteiro + número grande) ─────────
+def _polar(cx, cy, r, ang):
+    a = math.radians(ang - 90)
+    return cx + r * math.cos(a), cy + r * math.sin(a)
+
+
+def _arc(cx, cy, r, v0, v1):
+    a0, a1 = -90 + 1.8 * v0, -90 + 1.8 * v1
+    sx, sy = _polar(cx, cy, r, a1)
+    ex, ey = _polar(cx, cy, r, a0)
+    large = 1 if (a1 - a0) > 180 else 0
+    return f"M {sx:.1f} {sy:.1f} A {r} {r} 0 {large} 0 {ex:.1f} {ey:.1f}"
+
+
+def gauge_svg(score: float, accent: str) -> str:
+    cx, cy, r, sw = 170, 150, 118, 24
+    s = max(0.0, min(100.0, score))
+    tx, ty = _polar(cx, cy, r - 18, -90 + 1.8 * s)
+    svg = (
+        f'<svg viewBox="0 0 340 232" width="100%" style="max-width:380px;'
+        f'font-family:Inter,Arial,sans-serif;">'
+        f'<path d="{_arc(cx, cy, r, 0, 100)}" stroke="#262c38" stroke-width="{sw}" '
+        f'fill="none" stroke-linecap="round"/>'
+        f'<path d="{_arc(cx, cy, r, 0, OVERSOLD_MAX)}" stroke="{C_GREEN}" '
+        f'stroke-width="{sw}" fill="none" stroke-linecap="round"/>'
+        f'<path d="{_arc(cx, cy, r, OVERBOUGHT_MIN, 100)}" stroke="{C_RED}" '
+        f'stroke-width="{sw}" fill="none" stroke-linecap="round"/>'
+        f'<line x1="{cx}" y1="{cy}" x2="{tx:.1f}" y2="{ty:.1f}" stroke="#ffffff" '
+        f'stroke-width="4" stroke-linecap="round"/>'
+        f'<circle cx="{cx}" cy="{cy}" r="9" fill="#ffffff"/>'
+        f'<circle cx="{cx}" cy="{cy}" r="4.5" fill="#0E1117"/>'
+        f'<text x="{cx}" y="{cy + 54}" text-anchor="middle" font-size="52" '
+        f'font-weight="800" fill="{accent}">{round(s)}</text>'
+        f'<text x="{cx}" y="{cy + 76}" text-anchor="middle" font-size="12" '
+        f'letter-spacing="2" fill="#7d8595">DE 100</text>'
+        f'</svg>')
+    return (f"<style>body{{margin:0;background:#0E1117;}}</style>"
+            f"<div style='display:flex;justify-content:center;align-items:center;'>{svg}</div>")
 
 
 dates, prices, val, source, onchain = load_series()
@@ -97,75 +143,47 @@ oc = "MVRV on-chain ✓" if onchain else "MVRV on-chain indisponível"
 st.caption(f"Valorização de longo prazo do BTC (0–100) para SDCA — extremos de "
            f"ciclo. {source} · {oc}")
 
-# ── Faixa de sinal (verdito num relance) ─────────────────────────────────────
 st.markdown(
     f'<div style="background:{accent}22;border-left:5px solid {accent};'
     f'border-radius:10px;padding:12px 18px;font-size:16px;color:#eaecef;'
     f'margin-bottom:14px;">{dot} &nbsp;<b style="color:{accent};">{action}</b> '
     f'— zona <b>{label}</b> · score <b>{score:.0f}/100</b> · convicção '
-    f'<b>{conv_label}</b> ({conv * 100:.0f}%)</div>',
-    unsafe_allow_html=True)
+    f'<b>{conv_label}</b> ({conv * 100:.0f}%)</div>', unsafe_allow_html=True)
 
-# ── Leitura atual: gauge + cartões ───────────────────────────────────────────
 gcol, ccol = st.columns([1, 2])
-gauge = go.Figure(go.Indicator(
-    mode="gauge+number",
-    value=round(score),
-    number={"suffix": "/100", "font": {"size": 44, "color": accent}},
-    gauge={
-        "axis": {"range": [0, 100], "tickvals": [0, 50, 100], "tickcolor": "#9aa0a6",
-                 "tickwidth": 1},
-        "bar": {"color": "rgba(0,0,0,0)", "thickness": 0},
-        "bgcolor": "rgba(0,0,0,0)",
-        "borderwidth": 0,
-        "steps": [
-            {"range": [0, OVERSOLD_MAX], "color": "rgba(39,174,96,0.65)"},
-            {"range": [OVERSOLD_MAX, OVERBOUGHT_MIN], "color": "rgba(120,125,140,0.18)"},
-            {"range": [OVERBOUGHT_MIN, 100], "color": "rgba(203,67,53,0.65)"},
-        ],
-        "threshold": {"line": {"color": "#FFFFFF", "width": 4}, "thickness": 0.9,
-                      "value": round(score)},
-    },
-))
-gauge.update_layout(height=250, margin=dict(l=30, r=30, t=25, b=10),
-                    paper_bgcolor="rgba(0,0,0,0)", font={"color": "#cfd2d6"})
-gcol.plotly_chart(gauge, use_container_width=True)
-
+with gcol:
+    components.html(gauge_svg(score, accent), height=240)
 ccol.markdown(
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;height:230px;">'
     + card_html("Zona", label, accent)
     + card_html("Ação SDCA", action, accent)
     + card_html("Convicção", f"{conv_label} ({conv * 100:.0f}%)", conv_accent)
-    + card_html("Fonte de dados", "Preço + MVRV ✓" if onchain else "Preço", "#5D4FB0")
+    + card_html("Fonte de dados", "Preço + MVRV ✓" if onchain else "Preço", C_LINE)
     + '</div>', unsafe_allow_html=True)
 
 st.divider()
-
-# ── Histórico do ciclo ───────────────────────────────────────────────────────
 st.subheader("Histórico do ciclo")
 fig = go.Figure()
-fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
-              y0=OVERBOUGHT_MIN, y1=100, fillcolor="#A93226", opacity=0.33,
-              line_width=0, layer="below")
-fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
-              y0=0, y1=OVERSOLD_MAX, fillcolor="#1E8449", opacity=0.33,
-              line_width=0, layer="below")
-fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color="#CB4335", width=1.3, dash="dash"))
-fig.add_hline(y=OVERSOLD_MAX, line=dict(color="#27AE60", width=1.3, dash="dash"))
+fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=OVERBOUGHT_MIN,
+              y1=100, fillcolor=C_RED, opacity=0.20, line_width=0, layer="below")
+fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=0,
+              y1=OVERSOLD_MAX, fillcolor=C_GREEN, opacity=0.20, line_width=0, layer="below")
+fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color=C_RED, width=1.3, dash="dash"))
+fig.add_hline(y=OVERSOLD_MAX, line=dict(color=C_GREEN, width=1.3, dash="dash"))
 fig.add_annotation(xref="paper", x=0.012, y=95, yref="y", xanchor="left",
                    text="SOBRECOMPRADO — realizar", showarrow=False,
-                   font=dict(color="#F1948A", size=12))
+                   font=dict(color=C_RED_SOFT, size=12))
 fig.add_annotation(xref="paper", x=0.012, y=5, yref="y", xanchor="left",
                    text="SOBREVENDIDO — acumular", showarrow=False,
-                   font=dict(color="#7DCEA0", size=12))
+                   font=dict(color=C_GREEN_SOFT, size=12))
 fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines", showlegend=False,
-                         line=dict(color="#38BDF8", width=2.8),
+                         line=dict(color=C_LINE, width=2.8),
                          fill="tozeroy", fillcolor="rgba(56,189,248,0.08)"))
 fig.add_trace(go.Scatter(x=[dates[i]], y=[score], mode="markers", showlegend=False,
-                         marker=dict(color="#38BDF8", size=11, line=dict(color="white", width=1.5))))
+                         marker=dict(color=C_LINE, size=11, line=dict(color="white", width=1.5))))
 fig.add_annotation(x=dates[i], y=score, text=f"<b>{score:.0f}</b>", showarrow=False,
                    xanchor="left", xshift=9, font=dict(color="#ffffff", size=14),
-                   bgcolor="#38BDF8", borderpad=3)
+                   bgcolor=C_LINE, borderpad=3)
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
@@ -175,8 +193,6 @@ fig.update_layout(height=480, margin=dict(l=10, r=10, t=10, b=10),
 st.plotly_chart(fig, use_container_width=True)
 
 st.divider()
-
-# ── Decomposição ─────────────────────────────────────────────────────────────
 st.subheader("Decomposição — o que está a puxar o score (hoje)")
 names = {
     "trend_deviation": "Desvio lei de potência",
@@ -194,10 +210,10 @@ pairs.sort(key=lambda kv: kv[1], reverse=True)
 
 def _bar_color(v: float) -> str:
     if v < 35:
-        return "#27AE60"
+        return C_GREEN
     if v <= 65:
-        return "#95A5A6"
-    return "#CB4335"
+        return C_NEUTRAL
+    return C_RED
 
 
 bar = go.Figure(go.Bar(
@@ -211,6 +227,5 @@ bar.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
 st.plotly_chart(bar, use_container_width=True)
 st.caption("Verde = baixo percentil (barato) · vermelho = alto (caro). "
            "Linha a 50 = mediana histórica.")
-
 st.caption("Pesos iguais + normalização com decaimento (2 anos) + suavização — "
            "anti-overfit. NÃO é aconselhamento financeiro.")
