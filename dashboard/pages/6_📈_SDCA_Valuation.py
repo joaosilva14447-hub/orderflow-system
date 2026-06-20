@@ -74,7 +74,7 @@ def zone_color(s: float) -> str:
     if s < 65:
         return C_NEUTRAL
     if s < OVERBOUGHT_MIN:
-        return "#FB923C"
+        return C_RED_SOFT
     return C_RED
 
 
