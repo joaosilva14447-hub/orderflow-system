@@ -29,13 +29,13 @@ st.set_page_config(page_title="SDCA Valuation Oscillator", page_icon="📈",
 OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
 OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
 
-# Paleta B — harmónica (Tailwind): teal · âmbar · azul-céu · slate
-C_GREEN = "#14B8A6"   # teal (sobrevendido / acumular)
-C_RED = "#F59E0B"     # âmbar (sobrecomprado / realizar)
-C_LINE = "#38BDF8"
-C_NEUTRAL = "#94A3B8"
-C_GREEN_SOFT = "#2DD4BF"
-C_RED_SOFT = "#FBBF24"
+# Paleta TradingView: teal + coral + linha branca
+C_GREEN = "#26A69A"   # teal (sobrevendido / acumular)
+C_RED = "#EF5350"     # coral (sobrecomprado / realizar)
+C_LINE = "#FFFFFF"    # linha branca
+C_NEUTRAL = "#78909C"
+C_GREEN_SOFT = "#4DB6AC"
+C_RED_SOFT = "#EF9A9A"
 
 
 @st.cache_data(ttl=3600)
@@ -164,9 +164,9 @@ st.divider()
 st.subheader("Histórico do ciclo")
 fig = go.Figure()
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=OVERBOUGHT_MIN,
-              y1=100, fillcolor=C_RED, opacity=0.13, line_width=0, layer="below")
+              y1=100, fillcolor=C_RED, opacity=0.18, line_width=0, layer="below")
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=0,
-              y1=OVERSOLD_MAX, fillcolor=C_GREEN, opacity=0.13, line_width=0, layer="below")
+              y1=OVERSOLD_MAX, fillcolor=C_GREEN, opacity=0.18, line_width=0, layer="below")
 fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color=C_RED, width=1.3, dash="dash"))
 fig.add_hline(y=OVERSOLD_MAX, line=dict(color=C_GREEN, width=1.3, dash="dash"))
 fig.add_annotation(xref="paper", x=0.012, y=95, yref="y", xanchor="left",
@@ -177,12 +177,12 @@ fig.add_annotation(xref="paper", x=0.012, y=5, yref="y", xanchor="left",
                    font=dict(color=C_GREEN_SOFT, size=12))
 fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines", showlegend=False,
                          line=dict(color=C_LINE, width=2.8),
-                         fill="tozeroy", fillcolor="rgba(56,189,248,0.08)"))
+                         fill="tozeroy", fillcolor="rgba(255,255,255,0.04)"))
 fig.add_trace(go.Scatter(x=[dates[i]], y=[score], mode="markers", showlegend=False,
-                         marker=dict(color=C_LINE, size=11, line=dict(color="white", width=1.5))))
+                         marker=dict(color="#FFA726", size=10, line=dict(color="white", width=1.5))))
 fig.add_annotation(x=dates[i], y=score, text=f"<b>{score:.0f}</b>", showarrow=False,
-                   xanchor="left", xshift=9, font=dict(color="#ffffff", size=14),
-                   bgcolor=C_LINE, borderpad=3)
+                   xanchor="left", xshift=9, font=dict(color="#0E1117", size=13),
+                   bgcolor="#FFA726", borderpad=3)
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
