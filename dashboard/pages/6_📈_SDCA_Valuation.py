@@ -17,7 +17,6 @@ sys.path.insert(
 
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import streamlit as st
 
 from dashboard import valuation_engine as ve
@@ -45,7 +44,6 @@ def load_series():
         dates, prices = ve._demo_series()
         ppy = 12
         source = f"Demo (sem rede: {exc})"
-
     extra, onchain = {}, False
     try:
         md, mv = ve.fetch_onchain_mvrv()
@@ -53,7 +51,6 @@ def load_series():
         onchain = True
     except Exception:  # noqa: BLE001
         onchain = False
-
     val = ve.compute_series(dates, prices, periods_per_year=ppy, extra_raw=extra)
     return dates, prices, val, source, onchain
 
@@ -63,26 +60,76 @@ def _last_valid(arr: np.ndarray) -> int:
     return int(idx[-1]) if len(idx) else len(arr) - 1
 
 
+def zone_color(s: float) -> str:
+    if s < OVERSOLD_MAX:
+        return "#27AE60"
+    if s < 35:
+        return "#58D68D"
+    if s < 65:
+        return "#95A5A6"
+    if s < OVERBOUGHT_MIN:
+        return "#E59866"
+    return "#CB4335"
+
+
+def card_html(label: str, value: str, accent: str) -> str:
+    return (f'<div style="background:rgba(255,255,255,0.04);border-left:4px solid '
+            f'{accent};border-radius:10px;padding:14px 16px;height:100%;">'
+            f'<div style="font-size:12px;color:#9aa0a6;text-transform:uppercase;'
+            f'letter-spacing:.6px;">{label}</div>'
+            f'<div style="font-size:23px;font-weight:600;color:#eaecef;margin-top:6px;'
+            f'line-height:1.15;">{value}</div></div>')
+
+
 dates, prices, val, source, onchain = load_series()
 i = _last_valid(val.composite)
 score = float(val.composite[i])
 label, action = ve.zone_for(score)
 conv = float(val.conviction[i]) if not np.isnan(val.conviction[i]) else 0.0
 conv_label = "Alta" if conv >= 0.6 else ("Média" if conv >= 0.3 else "Baixa")
+accent = zone_color(score)
+conv_accent = "#3498DB" if conv >= 0.6 else ("#95A5A6" if conv >= 0.3 else "#7F8C8D")
 
 st.title("📈 SDCA Valuation Oscillator")
 oc = "MVRV on-chain ✓" if onchain else "MVRV on-chain indisponível"
 st.caption(f"Valorização de longo prazo do BTC (0–100) para SDCA — extremos de "
            f"ciclo. {source} · {oc}")
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Score", f"{score:.0f}/100")
-c2.metric("Zona", label)
-c3.metric("Ação SDCA", action)
-c4.metric("Convicção", f"{conv_label} ({conv * 100:.0f}%)")
+# ── Topo: gauge (esquerda) + cartões (direita) ───────────────────────────────
+gcol, ccol = st.columns([1, 2])
+gauge = go.Figure(go.Indicator(
+    mode="gauge+number",
+    value=round(score),
+    number={"suffix": "/100", "font": {"size": 34, "color": "#eaecef"}},
+    title={"text": "Score de valorização", "font": {"size": 13, "color": "#9aa0a6"}},
+    gauge={
+        "axis": {"range": [0, 100], "tickvals": [0, 20, 50, 80, 100],
+                 "tickcolor": "#9aa0a6"},
+        "bar": {"color": "#5D4FB0", "thickness": 0.28},
+        "bgcolor": "rgba(0,0,0,0)",
+        "steps": [
+            {"range": [0, OVERSOLD_MAX], "color": "rgba(39,174,96,0.55)"},
+            {"range": [OVERSOLD_MAX, OVERBOUGHT_MIN], "color": "rgba(140,140,150,0.16)"},
+            {"range": [OVERBOUGHT_MIN, 100], "color": "rgba(203,67,53,0.55)"},
+        ],
+        "threshold": {"line": {"color": "white", "width": 3}, "thickness": 0.85,
+                      "value": round(score)},
+    },
+))
+gauge.update_layout(height=230, margin=dict(l=25, r=25, t=40, b=10),
+                    paper_bgcolor="rgba(0,0,0,0)", font={"color": "#cfd2d6"})
+gcol.plotly_chart(gauge, use_container_width=True)
 
+ccol.markdown(
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+    + card_html("Zona", label, accent)
+    + card_html("Ação SDCA", action, accent)
+    + card_html("Convicção", f"{conv_label} ({conv * 100:.0f}%)", conv_accent)
+    + card_html("Fonte", "MVRV ✓" if onchain else "preço", "#5D4FB0")
+    + '</div>', unsafe_allow_html=True)
+
+# ── Oscilador (com preenchimento + etiqueta do valor atual) ──────────────────
 fig = go.Figure()
-# 2 zonas de EXTREMO: verde em baixo (0–20, sobrevendido), vermelho em cima (80–100)
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
               y0=OVERBOUGHT_MIN, y1=100, fillcolor="#A93226", opacity=0.33,
               line_width=0, layer="below")
@@ -97,18 +144,23 @@ fig.add_annotation(xref="paper", x=0.012, y=95, yref="y", xanchor="left",
 fig.add_annotation(xref="paper", x=0.012, y=5, yref="y", xanchor="left",
                    text="SOBREVENDIDO — acumular", showarrow=False,
                    font=dict(color="#7DCEA0", size=12))
-fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines",
-                         line=dict(color="#7F77DD", width=2.5), showlegend=False))
+fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines", showlegend=False,
+                         line=dict(color="#7F77DD", width=2.5),
+                         fill="tozeroy", fillcolor="rgba(127,119,221,0.10)"))
 fig.add_trace(go.Scatter(x=[dates[i]], y=[score], mode="markers", showlegend=False,
                          marker=dict(color="#26215C", size=11, line=dict(color="white", width=1))))
+fig.add_annotation(x=dates[i], y=score, text=f"<b>{score:.0f}</b>", showarrow=False,
+                   xanchor="left", xshift=9, font=dict(color="#cdc9f2", size=14),
+                   bgcolor="rgba(38,33,92,0.85)", borderpad=3)
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
 fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100])
-fig.update_layout(height=520, margin=dict(l=10, r=10, t=20, b=10),
+fig.update_layout(height=500, margin=dict(l=10, r=10, t=20, b=10),
                   hovermode="x unified", template="plotly_white")
 st.plotly_chart(fig, use_container_width=True)
 
+# ── Decomposição (barras coloridas por valor + referência a 50) ──────────────
 st.subheader("Decomposição — percentil de cada primitiva (hoje)")
 names = {
     "trend_deviation": "Desvio lei de potência",
@@ -119,11 +171,26 @@ names = {
     "ma_spread": "Spread MA (topo)",
     "mvrv": "MVRV (on-chain)",
 }
-rows = {names[k]: round(float(val.primitives_pct[k][i]) * 100) for k in names
-        if k in val.primitives_pct and not np.isnan(val.primitives_pct[k][i])}
-bar = go.Figure(go.Bar(x=list(rows.keys()), y=list(rows.values()), marker_color="#7F77DD"))
+pairs = [(names[k], round(float(val.primitives_pct[k][i]) * 100)) for k in names
+         if k in val.primitives_pct and not np.isnan(val.primitives_pct[k][i])]
+pairs.sort(key=lambda kv: kv[1], reverse=True)
+
+
+def _bar_color(v: float) -> str:
+    if v < 35:
+        return "#27AE60"
+    if v <= 65:
+        return "#95A5A6"
+    return "#CB4335"
+
+
+bar = go.Figure(go.Bar(
+    x=[p[0] for p in pairs], y=[p[1] for p in pairs],
+    marker_color=[_bar_color(p[1]) for p in pairs],
+    text=[p[1] for p in pairs], textposition="outside"))
+bar.add_hline(y=50, line=dict(color="rgba(200,200,200,0.4)", width=1, dash="dash"))
 bar.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
-                  yaxis=dict(title="Percentil (0–100)", range=[0, 100]),
+                  yaxis=dict(title="Percentil (0–100)", range=[0, 105]),
                   template="plotly_white")
 st.plotly_chart(bar, use_container_width=True)
 
