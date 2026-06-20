@@ -27,7 +27,7 @@ st.set_page_config(page_title="SDCA Valuation Oscillator", page_icon="📈",
                    layout="wide", initial_sidebar_state="expanded")
 
 OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
-OVERBOUGHT_MIN = 85  # > 85 → sobrecomprado (realizar)
+OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
 
 # Paleta TradingView: teal + coral + linha branca
 C_GREEN = "#26A69A"   # teal (sobrevendido / acumular)
