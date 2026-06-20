@@ -165,9 +165,9 @@ st.divider()
 st.subheader("Histórico do ciclo")
 fig = go.Figure()
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=OVERBOUGHT_MIN,
-              y1=100, fillcolor=C_RED, opacity=0.20, line_width=0, layer="below")
+              y1=100, fillcolor=C_RED, opacity=0.13, line_width=0, layer="below")
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y", y0=0,
-              y1=OVERSOLD_MAX, fillcolor=C_GREEN, opacity=0.20, line_width=0, layer="below")
+              y1=OVERSOLD_MAX, fillcolor=C_GREEN, opacity=0.13, line_width=0, layer="below")
 fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color=C_RED, width=1.3, dash="dash"))
 fig.add_hline(y=OVERSOLD_MAX, line=dict(color=C_GREEN, width=1.3, dash="dash"))
 fig.add_annotation(xref="paper", x=0.012, y=95, yref="y", xanchor="left",
@@ -187,10 +187,13 @@ fig.add_annotation(x=dates[i], y=score, text=f"<b>{score:.0f}</b>", showarrow=Fa
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
-fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100])
+fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100],
+                 gridcolor="rgba(148,163,184,0.10)", zeroline=False)
+fig.update_xaxes(gridcolor="rgba(148,163,184,0.06)")
 fig.update_layout(height=480, margin=dict(l=10, r=10, t=10, b=10),
-                  hovermode="x unified", template="plotly_white")
-st.plotly_chart(fig, use_container_width=True)
+                  hovermode="x unified", template="plotly_dark",
+                  paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+st.plotly_chart(fig, use_container_width=True, theme=None)
 
 st.divider()
 st.subheader("Decomposição — o que está a puxar o score (hoje)")
@@ -222,9 +225,11 @@ bar = go.Figure(go.Bar(
     text=[p[1] for p in pairs], textposition="outside"))
 bar.add_hline(y=50, line=dict(color="rgba(200,200,200,0.4)", width=1, dash="dash"))
 bar.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
-                  yaxis=dict(title="Percentil (0–100)", range=[0, 105]),
-                  template="plotly_white")
-st.plotly_chart(bar, use_container_width=True)
+                  yaxis=dict(title="Percentil (0–100)", range=[0, 105],
+                            gridcolor="rgba(148,163,184,0.10)"),
+                  template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
+                  plot_bgcolor="rgba(0,0,0,0)")
+st.plotly_chart(bar, use_container_width=True, theme=None)
 st.caption("Verde = baixo percentil (barato) · vermelho = alto (caro). "
            "Linha a 50 = mediana histórica.")
 st.caption("Pesos iguais + normalização com decaimento (2 anos) + suavização — "
