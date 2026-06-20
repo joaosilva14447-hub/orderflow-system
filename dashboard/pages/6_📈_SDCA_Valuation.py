@@ -111,22 +111,23 @@ gcol, ccol = st.columns([1, 2])
 gauge = go.Figure(go.Indicator(
     mode="gauge+number",
     value=round(score),
-    number={"suffix": "/100", "font": {"size": 30, "color": "#eaecef"}},
+    number={"suffix": "/100", "font": {"size": 44, "color": accent}},
     gauge={
-        "axis": {"range": [0, 100], "tickvals": [0, 20, 50, 80, 100], "tickcolor": "#9aa0a6"},
-        "bar": {"color": "#5D4FB0", "thickness": 0.28},
+        "axis": {"range": [0, 100], "tickvals": [0, 50, 100], "tickcolor": "#9aa0a6",
+                 "tickwidth": 1},
+        "bar": {"color": "rgba(0,0,0,0)", "thickness": 0},
         "bgcolor": "rgba(0,0,0,0)",
         "borderwidth": 0,
         "steps": [
-            {"range": [0, OVERSOLD_MAX], "color": "rgba(39,174,96,0.55)"},
-            {"range": [OVERSOLD_MAX, OVERBOUGHT_MIN], "color": "rgba(140,140,150,0.16)"},
-            {"range": [OVERBOUGHT_MIN, 100], "color": "rgba(203,67,53,0.55)"},
+            {"range": [0, OVERSOLD_MAX], "color": "rgba(39,174,96,0.65)"},
+            {"range": [OVERSOLD_MAX, OVERBOUGHT_MIN], "color": "rgba(120,125,140,0.18)"},
+            {"range": [OVERBOUGHT_MIN, 100], "color": "rgba(203,67,53,0.65)"},
         ],
-        "threshold": {"line": {"color": "white", "width": 3}, "thickness": 0.85,
+        "threshold": {"line": {"color": "#FFFFFF", "width": 4}, "thickness": 0.9,
                       "value": round(score)},
     },
 ))
-gauge.update_layout(height=250, margin=dict(l=30, r=30, t=20, b=20),
+gauge.update_layout(height=250, margin=dict(l=30, r=30, t=25, b=10),
                     paper_bgcolor="rgba(0,0,0,0)", font={"color": "#cfd2d6"})
 gcol.plotly_chart(gauge, use_container_width=True)
 
@@ -158,13 +159,13 @@ fig.add_annotation(xref="paper", x=0.012, y=5, yref="y", xanchor="left",
                    text="SOBREVENDIDO — acumular", showarrow=False,
                    font=dict(color="#7DCEA0", size=12))
 fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines", showlegend=False,
-                         line=dict(color="#7F77DD", width=2.5),
-                         fill="tozeroy", fillcolor="rgba(127,119,221,0.10)"))
+                         line=dict(color="#38BDF8", width=2.8),
+                         fill="tozeroy", fillcolor="rgba(56,189,248,0.08)"))
 fig.add_trace(go.Scatter(x=[dates[i]], y=[score], mode="markers", showlegend=False,
-                         marker=dict(color="#26215C", size=11, line=dict(color="white", width=1))))
+                         marker=dict(color="#38BDF8", size=11, line=dict(color="white", width=1.5))))
 fig.add_annotation(x=dates[i], y=score, text=f"<b>{score:.0f}</b>", showarrow=False,
-                   xanchor="left", xshift=9, font=dict(color="#cdc9f2", size=14),
-                   bgcolor="rgba(38,33,92,0.85)", borderpad=3)
+                   xanchor="left", xshift=9, font=dict(color="#ffffff", size=14),
+                   bgcolor="#38BDF8", borderpad=3)
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
