@@ -29,13 +29,13 @@ st.set_page_config(page_title="SDCA Valuation Oscillator", page_icon="📈",
 OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
 OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
 
-# Paleta moderna e coesa (Tailwind): esmeralda · rosa · azul-céu · slate
-C_GREEN = "#10B981"
-C_RED = "#F43F5E"
+# Paleta B — harmónica (Tailwind): teal · âmbar · azul-céu · slate
+C_GREEN = "#14B8A6"   # teal (sobrevendido / acumular)
+C_RED = "#F59E0B"     # âmbar (sobrecomprado / realizar)
 C_LINE = "#38BDF8"
 C_NEUTRAL = "#94A3B8"
-C_GREEN_SOFT = "#34D399"
-C_RED_SOFT = "#FB7185"
+C_GREEN_SOFT = "#2DD4BF"
+C_RED_SOFT = "#FBBF24"
 
 
 @st.cache_data(ttl=3600)
@@ -135,8 +135,7 @@ conv = float(val.conviction[i]) if not np.isnan(val.conviction[i]) else 0.0
 conv_label = "Alta" if conv >= 0.6 else ("Média" if conv >= 0.3 else "Baixa")
 accent = zone_color(score)
 conv_accent = "#3498DB" if conv >= 0.6 else ("#95A5A6" if conv >= 0.3 else "#7F8C8D")
-dot = "🟢" if score < 35 else ("🔴" if score >= OVERBOUGHT_MIN else
-                               ("🟠" if score >= 65 else "⚪"))
+dot = "🟢" if score < 35 else ("🟠" if score >= 65 else "⚪")
 
 st.title("📈 SDCA Valuation Oscillator")
 oc = "MVRV on-chain ✓" if onchain else "MVRV on-chain indisponível"
