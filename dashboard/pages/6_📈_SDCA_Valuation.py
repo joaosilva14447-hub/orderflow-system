@@ -27,7 +27,7 @@ st.set_page_config(page_title="SDCA Valuation Oscillator", page_icon="📈",
                    layout="wide", initial_sidebar_state="expanded")
 
 OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
-OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
+OVERBOUGHT_MIN = 85  # > 85 → sobrecomprado (realizar)
 
 # Paleta TradingView: teal + coral + linha branca
 C_GREEN = "#26A69A"   # teal (sobrevendido / acumular)
@@ -142,12 +142,15 @@ oc = "MVRV on-chain ✓" if onchain else "MVRV on-chain indisponível"
 st.caption(f"Valorização de longo prazo do BTC (0–100) para SDCA — extremos de "
            f"ciclo. {source} · {oc}")
 
+last_date = dates[i].strftime("%d/%m/%Y")
 st.markdown(
     f'<div style="background:{accent}22;border-left:5px solid {accent};'
     f'border-radius:10px;padding:12px 18px;font-size:16px;color:#eaecef;'
     f'margin-bottom:14px;">{dot} &nbsp;<b style="color:{accent};">{action}</b> '
     f'— zona <b>{label}</b> · score <b>{score:.0f}/100</b> · convicção '
-    f'<b>{conv_label}</b> ({conv * 100:.0f}%)</div>', unsafe_allow_html=True)
+    f'<b>{conv_label}</b> ({conv * 100:.0f}%) &nbsp;'
+    f'<span style="font-size:12px;color:#7d8595;">atualizado {last_date}</span></div>',
+    unsafe_allow_html=True)
 
 gcol, ccol = st.columns([1, 2])
 with gcol:
@@ -210,17 +213,25 @@ pairs = [(names[k], round(float(val.primitives_pct[k][i]) * 100)) for k in names
 pairs.sort(key=lambda kv: kv[1], reverse=True)
 
 
-def _bar_color(v: float) -> str:
-    if v < 35:
-        return C_GREEN
-    if v <= 65:
-        return C_NEUTRAL
-    return C_RED
+def _bar_color_gradient(v: float) -> str:
+    """Gradiente contínuo: teal (0) → cinza (50) → coral (100)."""
+    t = max(0.0, min(100.0, v)) / 100.0
+    if t <= 0.5:
+        f = t / 0.5
+        r = int(38 + (120 - 38) * f)
+        g = int(166 + (144 - 166) * f)
+        b = int(154 + (156 - 154) * f)
+    else:
+        f = (t - 0.5) / 0.5
+        r = int(120 + (239 - 120) * f)
+        g = int(144 + (83 - 144) * f)
+        b = int(156 + (80 - 156) * f)
+    return f"rgb({r},{g},{b})"
 
 
 bar = go.Figure(go.Bar(
     x=[p[0] for p in pairs], y=[p[1] for p in pairs],
-    marker_color=[_bar_color(p[1]) for p in pairs],
+    marker_color=[_bar_color_gradient(p[1]) for p in pairs],
     text=[p[1] for p in pairs], textposition="outside"))
 bar.add_hline(y=50, line=dict(color="rgba(200,200,200,0.4)", width=1, dash="dash"))
 bar.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10),
