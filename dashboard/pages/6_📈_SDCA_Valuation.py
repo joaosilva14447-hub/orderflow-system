@@ -29,8 +29,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-OVERSOLD_MAX = 35    # < 35 → sobrevendido (acumular)
-OVERBOUGHT_MIN = 65  # > 65 → sobrecomprado (realizar)
+OVERSOLD_MAX = 20    # < 20 → sobrevendido (acumular)
+OVERBOUGHT_MIN = 80  # > 80 → sobrecomprado (realizar)
 
 
 @st.cache_data(ttl=3600)
@@ -81,42 +81,31 @@ c2.metric("Zona", label)
 c3.metric("Ação SDCA", action)
 c4.metric("Convicção", f"{conv_label} ({conv * 100:.0f}%)")
 
-fig = make_subplots(specs=[[{"secondary_y": True}]])
-# 2 zonas claras: verde em baixo (sobrevendido), vermelho em cima (sobrecomprado)
+fig = go.Figure()
+# 2 zonas de EXTREMO: verde em baixo (0–20, sobrevendido), vermelho em cima (80–100)
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
               y0=OVERBOUGHT_MIN, y1=100, fillcolor="#A93226", opacity=0.33,
               line_width=0, layer="below")
 fig.add_shape(type="rect", xref="paper", x0=0, x1=1, yref="y",
               y0=0, y1=OVERSOLD_MAX, fillcolor="#1E8449", opacity=0.33,
               line_width=0, layer="below")
-fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color="#CB4335", width=1.3, dash="dash"),
-              secondary_y=False)
-fig.add_hline(y=OVERSOLD_MAX, line=dict(color="#27AE60", width=1.3, dash="dash"),
-              secondary_y=False)
-fig.add_annotation(xref="paper", x=0.012, y=93, yref="y", xanchor="left",
+fig.add_hline(y=OVERBOUGHT_MIN, line=dict(color="#CB4335", width=1.3, dash="dash"))
+fig.add_hline(y=OVERSOLD_MAX, line=dict(color="#27AE60", width=1.3, dash="dash"))
+fig.add_annotation(xref="paper", x=0.012, y=95, yref="y", xanchor="left",
                    text="SOBRECOMPRADO — realizar", showarrow=False,
                    font=dict(color="#F1948A", size=12))
-fig.add_annotation(xref="paper", x=0.012, y=7, yref="y", xanchor="left",
+fig.add_annotation(xref="paper", x=0.012, y=5, yref="y", xanchor="left",
                    text="SOBREVENDIDO — acumular", showarrow=False,
                    font=dict(color="#7DCEA0", size=12))
-
-fig.add_trace(go.Scatter(x=dates, y=val.composite, name="Valorização (0–100)",
-                         line=dict(color="#7F77DD", width=2.5)), secondary_y=False)
-fig.add_trace(go.Scatter(x=dates, y=prices, name="Preço BTC (log)",
-                         line=dict(color="#BA7517", width=1.3, dash="dash")), secondary_y=True)
-fig.add_trace(go.Scatter(x=[dates[i]], y=[score], name="Agora", mode="markers",
-                         marker=dict(color="#26215C", size=11, line=dict(color="white", width=1)),
-                         showlegend=False), secondary_y=False)
+fig.add_trace(go.Scatter(x=dates, y=val.composite, mode="lines",
+                         line=dict(color="#7F77DD", width=2.5), showlegend=False))
+fig.add_trace(go.Scatter(x=[dates[i]], y=[score], mode="markers", showlegend=False,
+                         marker=dict(color="#26215C", size=11, line=dict(color="white", width=1))))
 for hd, _r in ve.HALVINGS:
     if dates[0] <= hd <= dates[-1]:
         fig.add_vline(x=hd, line=dict(color="rgba(128,128,128,0.5)", width=1, dash="dot"))
-
-fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100], secondary_y=False)
-fig.update_yaxes(title_text="Preço BTC (log, USD)", type="log", secondary_y=True,
-                 showgrid=False, tickvals=[100, 1000, 10000, 100000],
-                 ticktext=["100", "1k", "10k", "100k"], minor=dict(ticks="", showgrid=False))
-fig.update_layout(height=560, margin=dict(l=10, r=10, t=30, b=10),
-                  legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
+fig.update_yaxes(title_text="Valorização (0–100)", range=[0, 100])
+fig.update_layout(height=520, margin=dict(l=10, r=10, t=20, b=10),
                   hovermode="x unified", template="plotly_white")
 st.plotly_chart(fig, use_container_width=True)
 
