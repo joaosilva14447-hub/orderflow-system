@@ -108,6 +108,13 @@ def card(label: str, value: str, accent: str, sub: str = "") -> str:
             f'line-height:1.15;">{value}</div>{s}</div>')
 
 
+def _chg_color(x, dead: float = 1.0) -> str:
+    """Cor com deadband: variações quase-flat ficam neutras (não vermelho/verde)."""
+    if x is None or abs(x) < dead:
+        return C_NEUTRAL
+    return C_GREEN if x > 0 else C_RED
+
+
 def classify_regime(chg30, chg90, cur, hi90):
     """Regime guiado pela TENDÊNCIA de 90d (estrutural), não por um wobble de 30d."""
     near_high = bool(hi90) and cur >= 0.97 * hi90
@@ -184,9 +191,9 @@ if dv_txt:
         f'padding:10px 16px;font-size:14px;color:#cfd3da;margin-bottom:14px;">'
         f'🔀 <b>Stables ↔ DeFi:</b> {dv_txt}</div>', unsafe_allow_html=True)
 
-c30 = C_GREEN if (chg30 or 0) > 0 else C_RED
-c90 = C_GREEN if (chg90 or 0) > 0 else C_RED
-ct = C_GREEN if (tvl30 or 0) > 0 else C_RED
+c30 = _chg_color(chg30)            # stablecoins: flat se |x|<1%
+c90 = _chg_color(chg90)
+ct = _chg_color(tvl30, dead=3.0)   # TVL é mais volátil → deadband maior
 usdt_share = ""
 if split.get("USDT") and split.get("USDC"):
     tot = split["USDT"] + split["USDC"]
@@ -197,7 +204,7 @@ st.markdown(
     + card("Variação 30d", f"{chg30:+.1f}%" if chg30 is not None else "n/d", c30, "dry powder")
     + card("Variação 90d", f"{chg90:+.1f}%" if chg90 is not None else "n/d", c90, "tendência")
     + card("SSR", f"{ssr_cur:.1f}" if ssr_cur is not None else "n/d", ssr_col,
-           f"percentil {ssr_pct:.0f} · {ssr_txt}" if ssr_pct is not None else "")
+           f"percentil {ssr_pct:.0f} · 12m · {ssr_txt}" if ssr_pct is not None else "")
     + card("TVL DeFi", _b(tvl[-1][1]), ct,
            f"{tvl30:+.1f}% em 30d" if tvl30 is not None else "")
     + '</div>', unsafe_allow_html=True)
@@ -242,6 +249,8 @@ figt.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10), hovermode="x
                    plot_bgcolor="rgba(0,0,0,0)")
 st.plotly_chart(figt, use_container_width=True, theme=None)
 
-st.caption("SSR baixo = muitos stablecoins face ao preço do BTC = poder de compra latente. "
-           "Regime guiado pela tendência de 90d (não por oscilações de 30d). "
-           "NÃO é aconselhamento financeiro.")
+st.caption("SSR baixo = muitos stablecoins face ao preço do BTC = poder de compra latente "
+           "(percentil sobre ~12 meses). Honesto: o SSR baixo agora reflete sobretudo o "
+           "preço baixo do BTC → parcialmente redundante com o valuation. Usa supply de BTC "
+           "≈ constante (~19,9M); o movimento relativo é dominado pelo preço. "
+           "Regime guiado pela tendência de 90d. NÃO é aconselhamento financeiro.")

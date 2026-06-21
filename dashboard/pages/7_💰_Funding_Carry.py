@@ -37,11 +37,15 @@ HIST_N = 90            # ~30 dias de histórico (3 períodos/dia)
 
 def _pack(rate: float, hist: list, venue: str) -> dict:
     ann = rate * ANN * 100.0
-    avg = float(np.mean([v for _, v in hist])) if hist else ann
-    # Ganho acumulado da posição delta-neutra na janela (soma das funding por período).
-    cum = float(np.sum([v / ANN for _, v in hist])) if hist else 0.0
+    vals = [v for _, v in hist]
+    # Carry recente ROBUSTO: mediana dos últimos 7 dias (21 períodos de 8h).
+    # Resolve o ruído do print instantâneo (F1) e é robusto a spikes (F2).
+    med7 = (float(np.median(vals[-21:])) if len(vals) >= 21
+            else (float(np.median(vals)) if vals else ann))
+    # Ganho acumulado da posição delta-neutra na janela = verdade REALIZADA.
+    cum = float(np.sum([v / ANN for v in vals])) if vals else 0.0
     return {"ok": True, "venue": venue, "per8h": rate * 100.0,
-            "ann": ann, "avg30": avg, "cum": cum, "hist": hist}
+            "ann": ann, "med7": med7, "cum": cum, "hist": hist}
 
 
 def _demo(asset: str) -> dict:
@@ -111,31 +115,32 @@ st.caption("Yield anualizado da estratégia delta-neutra (long spot + short perp
 data = {a: fetch_funding(a) for a in ASSETS}
 live = [a for a, d in data.items() if d["ok"]]
 src = "ao vivo" if live else "Demo (sem rede — vê o link no Streamlit Cloud)"
-best = max(data, key=lambda a: data[a]["ann"])
-bann = data[best]["ann"]
-bverd, bcol = verdict(bann)
+best = max(data, key=lambda a: data[a]["med7"])
+bmed = data[best]["med7"]
+bverd, bcol = verdict(bmed)
 st.markdown(
     f'<div style="background:{bcol}22;border-left:5px solid {bcol};border-radius:10px;'
     f'padding:12px 18px;font-size:16px;color:#eaecef;margin-bottom:14px;">'
-    f'🎯 Melhor carry agora: <b style="color:{bcol};">{best}</b> a '
-    f'<b>{bann:.1f}%/ano</b> — {bverd} &nbsp;'
+    f'🎯 Melhor carry recente: <b style="color:{bcol};">{best}</b> a '
+    f'<b>{bmed:.1f}%/ano</b> (mediana 7d) — {bverd} &nbsp;'
     f'<span style="font-size:12px;color:#7d8595;">dados {src}</span></div>',
     unsafe_allow_html=True)
 
 cols = st.columns(3)
 for col, asset in zip(cols, ASSETS):
     d = data[asset]
-    vlabel, vcol = verdict(d["ann"])
+    vlabel, vcol = verdict(d["med7"])      # veredito pelo carry recente robusto
     with col:
         st.markdown(
             f'<div style="background:rgba(255,255,255,0.04);border-left:4px solid {vcol};'
             f'border-radius:10px;padding:16px;">'
             f'<div style="font-size:13px;color:#9aa0a6;letter-spacing:.5px;">{asset} · {d["venue"]}</div>'
             f'<div style="font-size:34px;font-weight:700;color:{vcol};line-height:1.1;'
-            f'margin:4px 0;">{d["ann"]:+.1f}%<span style="font-size:14px;color:#7d8595;">/ano</span></div>'
-            f'<div style="font-size:13px;color:#cfd3da;">por 8h: <b>{d["per8h"]:+.4f}%</b></div>'
-            f'<div style="font-size:13px;color:#cfd3da;">média 30d: <b>{d["avg30"]:+.1f}%/ano</b></div>'
-            f'<div style="font-size:13px;color:#cfd3da;">ganho acum. 30d: '
+            f'margin:4px 0;">{d["med7"]:+.1f}%<span style="font-size:14px;color:#7d8595;">/ano</span></div>'
+            f'<div style="font-size:11px;color:#7d8595;margin-bottom:6px;">carry recente · mediana 7d</div>'
+            f'<div style="font-size:13px;color:#cfd3da;">agora: <b>{d["ann"]:+.1f}%/ano</b> '
+            f'· 8h {d["per8h"]:+.4f}%</div>'
+            f'<div style="font-size:13px;color:#cfd3da;">ganho acum. 30d (realizado): '
             f'<b style="color:{C_GREEN if d["cum"] >= 0 else C_RED};">{d["cum"]:+.2f}%</b></div>'
             f'<div style="margin-top:8px;font-size:13px;font-weight:600;color:{vcol};">{vlabel}</div>'
             f'</div>', unsafe_allow_html=True)
