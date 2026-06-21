@@ -87,6 +87,33 @@ def card_html(label: str, value: str, accent: str) -> str:
             f'line-height:1.15;">{value}</div></div>')
 
 
+# ── Cautela de ciclo (graduada, PROBABILÍSTICA — sem alvos de preço) ──────────
+# O score JÁ é um percentil temporal: ler "mais caro que ~X% da história" é
+# honesto e não inventa nada. A cautela ativa só ao ENTRAR em sobrecompra.
+CAUTION_T1 = 65   # entra em "Elevated" → começa a cautela
+CAUTION_T2 = 80   # sobrecomprado → cautela elevada
+CAUTION_T3 = 90   # euforia → risco extremo
+
+
+def caution_level(s: float) -> tuple[str, str, str, str]:
+    """Devolve (ícone, nível, cor, mensagem) consoante o score 0–100."""
+    if s < CAUTION_T1:
+        return ("🟢", "SEM CAUTELA", C_GREEN,
+                "Valorização em zona de acumulação/neutra. "
+                "Sem sinais de cautela de ciclo.")
+    if s < CAUTION_T2:
+        return ("⚠️", "CAUTELA", C_RED_SOFT,
+                "A entrar em zona historicamente cara. Prudente reduzir o ritmo "
+                "de compra e rever a exposição.")
+    if s < CAUTION_T3:
+        return ("⚠️", "CAUTELA ELEVADA", C_RED,
+                "Zona associada a fases avançadas de ciclo. Probabilidade "
+                "crescente de topo — gerir risco de forma gradual.")
+    return ("🔴", "RISCO EXTREMO", "#C62828",
+            "Valorização em extremo histórico. Zona de euforia, historicamente "
+            "perto de topos de ciclo. Máxima cautela.")
+
+
 # ── Gauge SVG personalizado (arco premium + ponteiro + número grande) ─────────
 def _polar(cx, cy, r, ang):
     a = math.radians(ang - 90)
@@ -162,6 +189,38 @@ ccol.markdown(
     + card_html("Convicção", f"{conv_label} ({conv * 100:.0f}%)", conv_accent)
     + card_html("Fonte de dados", "Preço + MVRV ✓" if onchain else "Preço", C_LINE)
     + '</div>', unsafe_allow_html=True)
+
+st.divider()
+st.subheader("Gestão de risco de ciclo")
+c_icon, c_name, c_col, c_msg = caution_level(score)
+pct_line = (f"Percentil de valorização <b>{score:.0f}/100</b> — mais caro que "
+            f"~{score:.0f}% da história recente (ponderada)."
+            if score >= CAUTION_T1 else
+            f"Percentil de valorização <b>{score:.0f}/100</b> — longe de zonas de risco.")
+marker = max(0.0, min(100.0, score))
+st.markdown(
+    f'<div style="background:{c_col}1A;border:1px solid {c_col}55;border-left:5px solid '
+    f'{c_col};border-radius:12px;padding:16px 20px;margin-bottom:6px;">'
+    f'<div style="display:flex;align-items:center;gap:10px;">'
+    f'<span style="font-size:22px;">{c_icon}</span>'
+    f'<span style="font-size:18px;font-weight:700;color:{c_col};letter-spacing:.5px;">'
+    f'{c_name}</span></div>'
+    f'<div style="color:#cfd3da;font-size:14px;margin-top:7px;line-height:1.5;">{c_msg}</div>'
+    f'<div style="color:#9aa0a6;font-size:12px;margin-top:6px;">{pct_line}</div>'
+    f'<div style="position:relative;height:10px;border-radius:6px;margin-top:14px;'
+    f'background:linear-gradient(90deg,{C_GREEN} 0%,{C_GREEN} {CAUTION_T1}%,'
+    f'{C_RED_SOFT} {CAUTION_T1}%,{C_RED_SOFT} {CAUTION_T2}%,'
+    f'{C_RED} {CAUTION_T2}%,{C_RED} {CAUTION_T3}%,'
+    f'#C62828 {CAUTION_T3}%,#C62828 100%);">'
+    f'<div style="position:absolute;left:calc({marker:.1f}% - 7px);top:-4px;width:14px;'
+    f'height:18px;background:#fff;border:2px solid #0E1117;border-radius:4px;'
+    f'box-shadow:0 0 5px rgba(0,0,0,.7);"></div></div>'
+    f'<div style="display:flex;gap:6px;flex-wrap:wrap;color:#7d8595;font-size:10.5px;'
+    f'margin-top:8px;">'
+    f'<span>🟢 &lt;65 normal</span><span>·</span><span>⚠️ 65–80 cautela</span>'
+    f'<span>·</span><span>🟠 80–90 elevada</span><span>·</span>'
+    f'<span>🔴 90+ extremo</span></div>'
+    f'</div>', unsafe_allow_html=True)
 
 st.divider()
 st.subheader("Histórico do ciclo")
