@@ -38,8 +38,10 @@ HIST_N = 90            # ~30 dias de histórico (3 períodos/dia)
 def _pack(rate: float, hist: list, venue: str) -> dict:
     ann = rate * ANN * 100.0
     avg = float(np.mean([v for _, v in hist])) if hist else ann
+    # Ganho acumulado da posição delta-neutra na janela (soma das funding por período).
+    cum = float(np.sum([v / ANN for _, v in hist])) if hist else 0.0
     return {"ok": True, "venue": venue, "per8h": rate * 100.0,
-            "ann": ann, "avg30": avg, "hist": hist}
+            "ann": ann, "avg30": avg, "cum": cum, "hist": hist}
 
 
 def _demo(asset: str) -> dict:
@@ -133,6 +135,8 @@ for col, asset in zip(cols, ASSETS):
             f'margin:4px 0;">{d["ann"]:+.1f}%<span style="font-size:14px;color:#7d8595;">/ano</span></div>'
             f'<div style="font-size:13px;color:#cfd3da;">por 8h: <b>{d["per8h"]:+.4f}%</b></div>'
             f'<div style="font-size:13px;color:#cfd3da;">média 30d: <b>{d["avg30"]:+.1f}%/ano</b></div>'
+            f'<div style="font-size:13px;color:#cfd3da;">ganho acum. 30d: '
+            f'<b style="color:{C_GREEN if d["cum"] >= 0 else C_RED};">{d["cum"]:+.2f}%</b></div>'
             f'<div style="margin-top:8px;font-size:13px;font-weight:600;color:{vcol};">{vlabel}</div>'
             f'</div>', unsafe_allow_html=True)
 
@@ -157,6 +161,24 @@ fig.update_layout(height=420, margin=dict(l=10, r=10, t=10, b=10), hovermode="x 
                   template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
                   plot_bgcolor="rgba(0,0,0,0)", legend=dict(orientation="h", y=1.08))
 st.plotly_chart(fig, use_container_width=True, theme=None)
+
+st.subheader("Ganho acumulado — quanto terias ganho (delta-neutro)")
+figc = go.Figure()
+for asset in ASSETS:
+    h = data[asset]["hist"]
+    if h:
+        cum = np.cumsum([v / ANN for _, v in h])
+        figc.add_trace(go.Scatter(x=[t for t, _ in h], y=cum, mode="lines", name=asset,
+                                  line=dict(color=palette[asset], width=2.2)))
+figc.add_hline(y=0, line=dict(color="rgba(148,163,184,0.4)", width=1, dash="dash"))
+figc.update_yaxes(title_text="Funding acumulada (%)", gridcolor="rgba(148,163,184,0.10)")
+figc.update_xaxes(gridcolor="rgba(148,163,184,0.06)")
+figc.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10), hovermode="x unified",
+                   template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)",
+                   plot_bgcolor="rgba(0,0,0,0)", legend=dict(orientation="h", y=1.1))
+st.plotly_chart(figc, use_container_width=True, theme=None)
+st.caption("Soma da funding recebida ao longo da janela, mantendo a posição delta-neutra "
+           "(antes de fees). É o 'dinheiro real' que a estratégia teria gerado.")
 
 with st.expander("ℹ️ Como funciona o cash-and-carry (e os riscos)"):
     st.markdown(
