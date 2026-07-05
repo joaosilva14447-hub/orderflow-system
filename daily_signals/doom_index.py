@@ -32,14 +32,27 @@ _SYSTEM = (
     'shape: {"i": <index>, "severity": <0-3>, "category": "<cat>"}. No prose.'
 )
 
+# Tier 3 = genuinely systemic/contagion events only (kept tight to avoid the
+# classic false positive where a minor "ban" headline looks catastrophic).
 _NEG_KEYWORDS = {
-    3: ["insolven", "bankrupt", "contagion", "collapse", "hacked", "exploit",
-        "ban ", "banned", "frozen", "halt withdrawal", "default"],
-    2: ["crash", "plunge", "lawsuit", "sec sues", "liquidat", "sell-off",
-        "selloff", "slump", "tumble", "probe", "fraud"],
+    3: ["insolven", "bankrupt", "contagion", "collapse", "exploit",
+        "hacked", "stolen", "drained", "funds lost", "depeg", "halt withdrawal",
+        "freeze withdrawal", "default on", "seized", "meltdown", "wiped out",
+        "bank run", "liquidity crisis"],
+    2: ["crash", "plunge", "lawsuit", "sec charges", "sec sues", "liquidat",
+        "sell-off", "selloff", "slump", "tumble", "probe", "fraud", "delist",
+        "trading ban", "outright ban", "bans crypto", "halt trading", "outflow"],
     1: ["fall", "drop", "decline", "fear", "warning", "risk", "concern",
-        "down", "slide", "weak"],
+        "slide", "weak", "dip", "pressure", "uncertain", "caution"],
 }
+
+# If a headline is clearly positive and has no tier-3 term, damp it down one
+# level — cuts false positives like "Bitcoin drops fear as ETF inflows surge".
+_POS_KEYWORDS = [
+    "surge", "rally", "soar", "record high", "all-time high", "etf approv",
+    "approved", "adopt", "jumps", "gains", "rebound", "recover", "inflow",
+    "bullish", "upgrade", "milestone",
+]
 
 
 @dataclass
@@ -68,10 +81,15 @@ class DoomResult:
 
 def _keyword_severity(text: str) -> int:
     t = text.lower()
-    for sev in (3, 2, 1):
-        if any(k in t for k in _NEG_KEYWORDS[sev]):
-            return sev
-    return 0
+    sev = 0
+    for level in (3, 2, 1):
+        if any(k in t for k in _NEG_KEYWORDS[level]):
+            sev = level
+            break
+    # Positive-tone dampener (never touches genuine systemic tier-3 events).
+    if sev in (1, 2) and any(p in t for p in _POS_KEYWORDS):
+        sev -= 1
+    return sev
 
 
 def _score_keywords(headlines: list[Headline]) -> list[ScoredHeadline]:
