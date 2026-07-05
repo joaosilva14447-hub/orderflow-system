@@ -1,0 +1,28 @@
+# RSS feeds for the daily Doom Index.
+# Add/remove freely. `weight` lets a source count more (e.g. mainstream contagion).
+# `tier`: "crypto" = crypto-native press, "macro" = general/finance press.
+feeds:
+  - name: CoinDesk
+    url: https://www.coindesk.com/arc/outboundfeeds/rss/
+    tier: crypto
+    weight: 1.0
+  - name: Cointelegraph
+    url: https://cointelegraph.com/rss
+    tier: crypto
+    weight: 1.0
+  - name: The Block
+    url: https://www.theblock.co/rss.xml
+    tier: crypto
+    weight: 1.0
+  - name: Decrypt
+    url: https://decrypt.co/feed
+    tier: crypto
+    weight: 0.8
+  - name: Bitcoin Magazine
+    url: https://bitcoinmagazine.com/feed
+    tier: crypto
+    weight: 0.8
+  - name: CNBC Finance
+    url: https://www.cnbc.com/id/10000664/device/rss/rss.html
+    tier: macro
+    weight: 1.2

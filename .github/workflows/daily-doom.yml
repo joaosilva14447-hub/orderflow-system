@@ -1,0 +1,46 @@
+name: Daily Bottom Radar
+
+on:
+  schedule:
+    # 08:05 UTC every day (after most overnight news lands).
+    - cron: "5 8 * * *"
+  workflow_dispatch:  # allow manual runs from the Actions tab
+
+permissions:
+  contents: write  # to commit the day's snapshot back to the repo
+
+concurrency:
+  group: daily-doom
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r daily_signals/requirements.txt
+
+      - name: Run daily pipeline
+        working-directory: daily_signals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python run.py
+
+      - name: Commit snapshot
+        run: |
+          git config user.name "doom-bot"
+          git config user.email "actions@github.com"
+          git add daily_signals/history
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(doom): snapshot $(date -u +%F)"
+            git push
+          fi
