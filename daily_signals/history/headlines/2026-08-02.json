@@ -1,0 +1,222 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Strategy holds STRC dividend at 12%",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/08/01/strategy-holds-strc-dividend-at-12",
+    "published": "2026-08-01T22:01:57+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin cold-wallet attack spreads to 4,500 addresses as losses near $89 million",
+    "summary": "",
+    "link": "https://www.coindesk.com/tech/2026/08/02/bitcoin-cold-wallet-attack-spreads-to-4-500-addresses-as-losses-near-usd89-million",
+    "published": "2026-08-01T20:10:54+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Tokenized stock trading surged 288% in July, but one QQQ token drove most of it",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/08/01/tokenized-stock-trading-surged-288-in-july-but-one-qqq-token-drove-most-of-it",
+    "published": "2026-08-01T16:51:35+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bank of Italy research suggests stablecoins aren't necessarily cheaper for remittances",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/08/01/bank-of-italy-research-suggests-stablecoins-aren-t-necessarily-cheaper-for-remittances",
+    "published": "2026-08-01T16:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin mining difficulty shrinks 14% from this year's high as plunging revenues force operators to pivot",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/08/01/bitcoin-mining-difficulty-shrinks-14-from-this-year-s-high-as-plunging-revenues-force-operators-to-pivot",
+    "published": "2026-08-01T15:51:10+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "SEC to review Nasdaq bitcoin options approval after CME challenge",
+    "summary": "",
+    "link": "https://www.coindesk.com/policy/2026/08/01/sec-to-review-nasdaq-bitcoin-options-approval-after-cme-challenge",
+    "published": "2026-08-01T15:48:27+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Solana Foundation's new CISO warns AI is making crypto scams more convincing",
+    "summary": "",
+    "link": "https://www.coindesk.com/tech/2026/07/31/solana-foundation-s-new-ciso-warns-ai-is-making-crypto-scams-more-convincing",
+    "published": "2026-08-01T13:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Everyone has the perps convergence backwards",
+    "summary": "",
+    "link": "https://www.coindesk.com/opinion/2026/08/01/everyone-has-the-perps-convergence-backwards",
+    "published": "2026-08-01T13:00:00+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Trump Media sells another 2,628 BTC, holdings fall to 4,261 BTC",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Trump Media sells another 2,628 BTC, holdings fall to 4,261 BTC\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-trump-on-bitcoin.jpg\" /></p><p>Trump Media transferred another 2,628 Bitcoin to Crypto.com, bringing its reported sales over seven months to 7,281 BTC and leaving the company with",
+    "link": "https://cointelegraph.com/news/trump-media-2628-btc-crypto-com-4261-btc-holdings?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-02T09:29:15+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Coldcard hack sparks biggest sub-1 BTC move since FTX: CryptoQuant",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Coldcard hack sparks biggest sub-1 BTC move since FTX: CryptoQuant\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-what-is-segwit-explained2-1.jpg\" /></p><p>Bitcoin users moved 39,600 BTC in small transactions as the Coldcard hack continued, with researchers warning that the attack remained",
+    "link": "https://cointelegraph.com/news/coldcard-biggest-sub-1-btc-transfer-ftx-cryptoquant?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-02T08:04:56+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Onchain, in court: What happened in crypto legal news this week",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Onchain, in court: What happened in crypto legal news this week\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-5-key-highlights-of-the-secs-lawsuit-against-binance.jpg\" /></p><p>A case tied to defunct crypto exchange FTX moves forward, a soldier seeks to dismiss over a Polymarket bet and a",
+    "link": "https://cointelegraph.com/news/on-chain-in-court-crypto-legal-news4?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-01T21:14:39+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Minnesota crypto ATM ban goes into effect after reported $1M losses",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Minnesota crypto ATM ban goes into effect after reported $1M losses\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-crypto-atm-ban.png\" /></p><p>State officials reported that Minnesota residents, and largely senior citizens, had lost about $1 million from scams tied to crypto kiosks from 20",
+    "link": "https://cointelegraph.com/news/minnesota-crypto-atm-ban-losses-scams?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-01T18:07:17+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Crypto PAC pours another $1M into Michigan House race",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Crypto PAC pours another $1M into Michigan House race\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-crypto-industry-votes-us.png\" /></p><p>Michigan incumbent Shri Thanedar’s re-election bid against other Democratic candidates is getting more about crypto with an infusion of ads funded by",
+    "link": "https://cointelegraph.com/news/crypto-pac-michigan-thanedar-mckinney?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-01T15:44:02+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Russia expands crypto mining ban to Moscow through 2032",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Russia expands crypto mining ban to Moscow through 2032\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/hi-china-mining-ban.jpg\" /></p><p>Russia has added Moscow, the Moscow Region and parts of Kursk Region to its cryptocurrency mining ban list, citing power supply concerns behind the restrict",
+    "link": "https://cointelegraph.com/news/russia-expands-crypto-mining-ban-moscow-2032?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-08-01T10:23:41+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Iran-linked exchange sent $676 million to Binance in alleged sanctions-evasion operation: Reuters",
+    "summary": "<p>Dubai-based Shelbit processed over $4 billion since May 2024 through a network tied to Iranian gambling sites, the central bank, and the IRGC, per Reuters.</p>",
+    "link": "https://www.theblock.co/post/410355/iran-linked-exchange-sent-676-million-to-binance-in-alleged-sanctions-evasion-operation-reuters?utm_source=rss&utm_medium=rss",
+    "published": "2026-08-01T21:18:45+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "BNB Chain ‘pursuing legal action’ against former employee over memecoin launched from tutorial wallet",
+    "summary": "<p>Lookonchain said the former employee bought nearly 80% of ASTEROID's supply for $10,000 before selling most of the tokens for about $638,000.</p>",
+    "link": "https://www.theblock.co/post/410351/bnb-chain-pursuing-legal-action-against-former-employee-over-memecoin-launched-from-tutorial-wallet?utm_source=rss&utm_medium=rss",
+    "published": "2026-08-01T19:09:57+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Russian decree bans crypto mining across Moscow region through 2032",
+    "summary": "<p>Regional energy officials had estimated that mining consumes 1 GW of power and could contribute to future electricity shortages. </p>",
+    "link": "https://www.theblock.co/post/410345/russian-decree-bans-crypto-mining-across-moscow-region-through-2032?utm_source=rss&utm_medium=rss",
+    "published": "2026-08-01T16:09:15+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "CZ Warns Bitcoin Holders After $70 Million Wallet Exploit: 'Nothing Is 100%'",
+    "summary": "The Binance founder urged holders to spread funds across multiple wallets as Galaxy Research put the toll from the Coldcard exploit at roughly $70 million—nearly double the initial estimate.",
+    "link": "https://decrypt.co/374810/cz-warns-bitcoin-holders-70-million-coldcard-wallet-exploit",
+    "published": "2026-08-01T16:01:17+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "The More Americans Know About AI, the Less They Like It: Gallup",
+    "summary": "Gallup says Americans are growing more skeptical of artificial intelligence, with rising concerns about job losses, businesses' use of the technology, and the technology’s growing impact.",
+    "link": "https://decrypt.co/374794/more-americans-know-about-ai-less-they-like-gallup",
+    "published": "2026-08-01T15:01:09+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CNBC Finance",
+    "tier": "macro",
+    "weight": 1.2,
+    "title": "Goldman traders are on pace for a record year. A close-up look at how they're doing it",
+    "summary": "In a new interview with CNBC, a Goldman exec breaks down what's driving stocks, where markets are headed, and how the bank’s equities desk fuels its growth.",
+    "link": "https://www.cnbc.com/2026/08/01/goldman-traders-are-on-pace-for-a-record-year-a-close-up-look-at-how-theyre-doing-it.html",
+    "published": "2026-08-01T20:22:15+00:00"
+  }
+]
