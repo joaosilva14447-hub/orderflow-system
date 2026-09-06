@@ -1,0 +1,101 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Timing the bitcoin market is exciting but nearly impossible. Here's why",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/09/05/why-crypto-experts-say-buying-and-holding-bitcoin-easily-beats-trying-to-time-the-market",
+    "published": "2026-09-05T18:05:11+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Dollar-backed stablecoins can push local currencies lower, Bank of Korea study finds",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/09/05/dollar-backed-stablecoins-can-push-local-currencies-lower-bank-of-korea-study-finds",
+    "published": "2026-09-05T16:43:13+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Tether-backed Orionx to shut down after audit flags $7M custody gap",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Tether-backed Orionx to shut down after audit flags $7M custody gap\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/09/01M1TTSPPYA631ETX2200VF1YM/orionx1.png\" /></p><p>Tether-backed Orionx is permanently closing after an audit found more than $7 million in customer assets had moved to wal",
+    "link": "https://cointelegraph.com/news/orionx-shut-down-7-million-move-outside-wallets?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-09-06T09:07:08+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "UBS, Jane Street among firms with combined $75 million in Hyperliquid ETF holdings: Bloomberg",
+    "summary": "Brazil's Wealth High Governance Asset Management held about $24 million worth of 21Shares' HYPE fund as of the end of June, the top HYPE ETF holder.",
+    "link": "https://www.theblock.co/news/defi/2026-09-05-ubs-jane-street-among-firms-with-combined-75-million-in-hyperliquid-etf-holdings-bloomberg-413616",
+    "published": "2026-09-05T20:02:08+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "LeBron James teases Polymarket partnership in new social media video",
+    "summary": "The announcement comes after James' free agency decision generated $273 million in prediction market volume across platforms.",
+    "link": "https://www.theblock.co/news/deals/2026-09-05-lebron-james-teases-polymarket-partnership-in-new-social-media-video-413608",
+    "published": "2026-09-05T14:01:40+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Ancient Bitcoin Wallet That Turned $120 Into $3 Million Wakes Up",
+    "summary": "At least four more decade-old wallets moved a combined $15.7 million between Aug. 29 and Sept. 4, with one batch of coins sent to Coinbase in a likely sign of a sale.",
+    "link": "https://decrypt.co/377510/ancient-bitcoin-wallet-3-million-wakes-up",
+    "published": "2026-09-05T17:01:04+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "What Is Robinhood Chain? The Ethereum Layer-2 Network for Tokenized Stocks and Meme Coins",
+    "summary": "Robinhood Chain is an Ethereum layer-2 network built with Arbitrum technology for tokenized assets, crypto apps, and on-chain financial products.",
+    "link": "https://decrypt.co/resources/what-robinhood-chain-ethereum-layer-2-network-tokenized-stocks",
+    "published": "2026-09-05T16:06:41+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Update Your Browser: Google Patches Chrome Flaw Hackers Were Already Using",
+    "summary": "The update fixes a high-severity flaw in Chrome’s V8 engine, but Google has not revealed who is using it or whom they targeted.",
+    "link": "https://decrypt.co/377501/google-chrome-zero-day-exploited",
+    "published": "2026-09-05T15:01:04+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "AI Just Solved a 350-Year-Old Math Problem By Writing the Longest Proof Ever",
+    "summary": "Anthropic says Claude spent 11 days turning Fermat's Last Theorem into 13 million lines of code a computer can check itself, no human trust required",
+    "link": "https://decrypt.co/377491/ai-solved-350-year-old-math-problem",
+    "published": "2026-09-05T13:01:03+00:00"
+  }
+]
