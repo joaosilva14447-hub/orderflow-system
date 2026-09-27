@@ -1,0 +1,200 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "How months of work on the Clarity Act all fell apart",
+    "summary": "",
+    "link": "https://www.coindesk.com/news-analysis/2026/09/27/how-months-of-work-on-the-clarity-act-all-fell-apart",
+    "published": "2026-09-27T12:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Kraken’s parent Payward is betting billions on becoming financial infrastructure, not just a crypto exchange",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/09/26/kraken-s-parent-payward-is-betting-billions-on-becoming-financial-infrastructure-not-just-a-crypto-exchange",
+    "published": "2026-09-26T14:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Australia asks OpenAI, Anthropic chiefs to Senate inquiry on rogue hack: Report",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Australia asks OpenAI, Anthropic chiefs to Senate inquiry on rogue hack: Report  \" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/09/01M3HDTS8Y7GZWZ1TSH2F6ES35/hi-how-to-train-an-ai-bot-to-day-trade-crypto.png\" /></p><p>A rogue OpenAI research agent bypassed blocks on the Australian gover",
+    "link": "https://cointelegraph.com/news/australia-summons-openai-anthropic-chiefs-to-senate-inquiry-on-health-data-hack-report?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-09-27T12:46:28+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Riot Platforms repays $200M credit facility, releases collateral",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Riot Platforms repays $200M credit facility, releases collateral\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/09/01M3H4K9S7MJRE0V8KP0S1ZAM6/hi-eu-vote-on-bitcoin-mining-ai-1.png\" /></p><p>The Bitcoin miner has continued to expand its data-center business as well.</p>",
+    "link": "https://cointelegraph.com/news/riot-platforms-repays-200m-credit-facility-releases-collateral?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-09-27T09:57:19+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Saylor outlines ‘bill of digital rights’ to help build prosperity in future economy",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Saylor outlines ‘bill of digital rights’ to help build prosperity in future economy\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/09/01M3GVCZQXE2KGQ9ZJ6AN3C2VH/hi-michael-saylor2.png\" /></p><p>Our ambition should be to “enable 10 million new companies to raise capital,” Strategy’s execu",
+    "link": "https://cointelegraph.com/news/saylor-outlines-bill-of-digital-rights-to-help-build-prosperity-in-future-economy?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-09-27T07:18:42+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin ETFs turn positive for 2026 with $2.4 billion weekly inflow, their largest since October",
+    "summary": "The inflows pushed bitcoin ETFs' year-to-date net flows back above zero, after the funds sat roughly $5.8 billion in the red just two months ago.",
+    "link": "https://www.theblock.co/news/markets/2026-09-26-bitcoin-etfs-turn-positive-for-2026-with-2-4-billion-weekly-inflow-their-largest-since-october-416944",
+    "published": "2026-09-26T17:24:12+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Kalshi loses appeal over Ohio and Tennessee sports betting laws, widening circuit split",
+    "summary": "A federal appeals court ruled on Friday that Kalshi has not adequately shown its sports event contracts are swaps under the Commodity Exchange Act.",
+    "link": "https://www.theblock.co/news/regulation/2026-09-26-kalshi-loses-appeal-over-ohio-and-tennessee-sports-betting-laws-widening-circuit-split-416937",
+    "published": "2026-09-26T15:17:34+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "SEC Staff Says Token Buybacks Don't Make Crypto a Security—If the Network Works",
+    "summary": "New SEC staff guidance says announcing a token buyback on a functional network isn't a promise that turns the token into a security, a shift one attorney says makes securities laws look \"opt-in.\"",
+    "link": "https://decrypt.co/379398/sec-staff-token-buybacks-dont-make-crypto-security",
+    "published": "2026-09-27T13:01:03+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Bitcoin ETFs Notch Seven-Day Winning Streak as 2026 Flows Turn Green",
+    "summary": "Bitcoin ETFs have drawn nearly $3 billion over seven straight sessions, erasing post-Clarity Act losses and pushing 2026 flows back into positive territory.",
+    "link": "https://decrypt.co/379391/bitcoin-etfs-notch-seven-day-winning-streak-as-2026-flows-turn-green",
+    "published": "2026-09-26T17:01:03+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "How Crypto Stopped Waiting for Congress and Learned to Love the Regulators",
+    "summary": "After the Clarity Act failed in the Senate, the SEC, CFTC, and the Fed moved within days to write crypto's rules themselves. Will it be enough?",
+    "link": "https://decrypt.co/379383/how-crypto-stopped-waiting-congress-learned-love-regulators",
+    "published": "2026-09-26T16:06:03+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "AI Agents Are Racing to Make Quantum-Safe Bitcoin Cheap—And Winning",
+    "summary": "An open competition run by StarkWare, Yukon Research, and Eigen Labs drove the estimated cost of building a quantum-safe Bitcoin transaction from about $320 to roughly $67, with AI models topping the leaderboards.",
+    "link": "https://decrypt.co/379378/ai-agents-racing-make-quantum-safe-bitcoin-cheap",
+    "published": "2026-09-26T15:01:05+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Bitcoin Magazine",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Samourai Letter #7: Notes From The Inside",
+    "summary": "<p><a href=\"https://bitcoinmagazine.com\" rel=\"nofollow\">Bitcoin Magazine</a><br />\n<img src=\"https://bitcoinmagazine.com/wp-content/uploads/2026/09/Rage-Letters-7.png\" style=\"display: block; margin: 1em auto;\" /><br />\n<a href=\"https://bitcoinmagazine.com/culture/samourai-letter-7-notes-from-the-inside\" rel=\"nofollow\">Samourai Letter #7: Notes From The Inside</a></p>\n<p>Syndicated from The Rage: S",
+    "link": "https://bitcoinmagazine.com/culture/samourai-letter-7-notes-from-the-inside",
+    "published": "2026-09-26T17:06:47+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Bitcoin Magazine",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "An Austrian Economist Explains Why AI Will Make Everyone an Entrepreneur w/ Per Bylund",
+    "summary": "<p><a href=\"https://bitcoinmagazine.com\" rel=\"nofollow\">Bitcoin Magazine</a><br />\n<img src=\"https://bitcoinmagazine.com/wp-content/uploads/2026/09/An-Austrian-Economist-Explains-Why-AI-Will-Make-Everyone-an-Entrepreneur-w-Per-Bylund-.jpg\" style=\"display: block; margin: 1em auto;\" /><br />\n<a href=\"https://bitcoinmagazine.com/videos/an-austrian-economist-explains-why-ai-will-make-everyone-an-entre",
+    "link": "https://bitcoinmagazine.com/videos/an-austrian-economist-explains-why-ai-will-make-everyone-an-entrepreneur-w-per-bylund",
+    "published": "2026-09-26T15:49:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Bitcoin Magazine",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "TECHNICAL ANALYSIS: BTC to Cross Key Price Level Against Gold",
+    "summary": "<p><a href=\"https://bitcoinmagazine.com\" rel=\"nofollow\">Bitcoin Magazine</a><br />\n<img src=\"https://bitcoinmagazine.com/wp-content/uploads/2026/09/TECHNICAL-ANALYSIS-BTC-to-Cross-Key-Price-Level-Against-Gold-.jpg\" style=\"display: block; margin: 1em auto;\" /><br />\n<a href=\"https://bitcoinmagazine.com/videos/technical-analysis-btc-to-cross-key-price-level-against-gold\" rel=\"nofollow\">TECHNICAL ANA",
+    "link": "https://bitcoinmagazine.com/videos/technical-analysis-btc-to-cross-key-price-level-against-gold",
+    "published": "2026-09-26T15:43:07+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Bitcoin Magazine",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Katie Stockton: $93K BTC is the Key Price Level for the Bull Market",
+    "summary": "<p><a href=\"https://bitcoinmagazine.com\" rel=\"nofollow\">Bitcoin Magazine</a><br />\n<img src=\"https://bitcoinmagazine.com/wp-content/uploads/2026/09/Katie-Stockton-93K-BTC-is-the-Key-Price-Level-for-the-Bull-Market-.jpg\" style=\"display: block; margin: 1em auto;\" /><br />\n<a href=\"https://bitcoinmagazine.com/videos/katie-stockton-93k-btc-is-the-key-price-level-for-the-bull-market\" rel=\"nofollow\">Kat",
+    "link": "https://bitcoinmagazine.com/videos/katie-stockton-93k-btc-is-the-key-price-level-for-the-bull-market",
+    "published": "2026-09-26T15:37:08+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Bitcoin Magazine",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Grant Cardone: Real Estate “Armageddon” Is Here – Why BITCOIN is the Hedge",
+    "summary": "<p><a href=\"https://bitcoinmagazine.com\" rel=\"nofollow\">Bitcoin Magazine</a><br />\n<img src=\"https://bitcoinmagazine.com/wp-content/uploads/2026/09/Grant-Cardone-Real-Estate-22Armageddon22-Is-Here-–-Why-BITCOIN-is-the-Hedge-.jpg\" style=\"display: block; margin: 1em auto;\" /><br />\n<a href=\"https://bitcoinmagazine.com/news/grant-cardone-real-estate-armageddon-is-here-why-bitcoin-is-the-hedge\" rel=\"n",
+    "link": "https://bitcoinmagazine.com/news/grant-cardone-real-estate-armageddon-is-here-why-bitcoin-is-the-hedge",
+    "published": "2026-09-26T15:23:26+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CNBC Finance",
+    "tier": "macro",
+    "weight": 1.2,
+    "title": "Debt-hungry AI companies face increased risk as bond yields spike",
+    "summary": "The AI infrastructure buildout shows no sign of slowing, but the surge in Treasury yields means it's at least going to cost more.",
+    "link": "https://www.cnbc.com/2026/09/27/debt-hungry-data-center-companies-increased-risk-bond-yields-spike.html",
+    "published": "2026-09-27T11:00:01+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CNBC Finance",
+    "tier": "macro",
+    "weight": 1.2,
+    "title": "This may be the ‘missing piece’ for investors looking to boost AI exposure",
+    "summary": "Matthews Asia portfolio manager Andrew Mattock delivers a strategy that revolves around the world's second largest economy.",
+    "link": "https://www.cnbc.com/2026/09/26/ai-portfolios-may-need-china-to-grab-the-biggest-gains.html",
+    "published": "2026-09-26T15:00:01+00:00"
+  }
+]
