@@ -1,0 +1,134 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "The Clarity Act stalled. Bankers aren’t hitting the brakes yet on crypto dealmaking",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/04/the-clarity-act-stalled-crypto-dealmakers-aren-t-hitting-the-brakes-yet",
+    "published": "2026-10-04T13:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Payments firm OpenPayd targets year-end Nasdaq listing to fund U.S. expansion and acquisitions",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/03/openpayd-targets-year-end-nasdaq-listing-to-fund-u-s-expansion-and-acquisitions",
+    "published": "2026-10-03T16:00:00+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Crypto job postings triple to over 1,200 in September, but applications fall",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/03/crypto-job-postings-triple-to-over-1-200-in-september-but-applications-fall",
+    "published": "2026-10-03T16:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Cathie Wood says smart investors need to start watching where AI agents spend money",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/10/01/cathie-wood-says-smart-investors-need-to-start-watching-where-ai-agents-spend-money",
+    "published": "2026-10-03T15:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Japan adds Garantex to list of Russia sanctions over Ukraine war",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Japan adds Garantex to list of Russia sanctions over Ukraine war\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M43EQ7PEEE3Z1JRGK2E12RMJ/hi-crypto-offers-russia-no-way-out-from-western-sanctions2.png\" /></p><p>Garantex was previously sanctioned by the US, the EU and other jurisdicti",
+    "link": "https://cointelegraph.com/news/japan-adds-garantex-to-list-of-russia-sanctions-over-ukraine-war?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-10-04T12:42:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "El Salvador receives $138 million from IMF after Bitcoin waivers granted",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"El Salvador receives $138 million from IMF after Bitcoin waivers granted\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M434D7ZXME5ND5M2XADZCGVE/hi-how-bitcoin-is-transforming-lives-in-el-salvador.png\" /></p><p>Efforts will continue to reduce the state’s involvement in Bitcoin-relat",
+    "link": "https://cointelegraph.com/news/el-salvador-receives-138-million-from-imf-after-bitcoin-waivers-granted?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-10-04T09:40:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Russia’s Finance Ministry pays wages in digital rubles for first time",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Russia’s Finance Ministry pays wages in digital rubles for first time\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M42W4H59F8TR0F58VVB4T7YG/russia-kremlin-moscow-red-square-digital-rouble-ruble-national-cryptocurrency.png\" /></p><p>Work on the introduction of the digital ruble to",
+    "link": "https://cointelegraph.com/news/russias-finance-ministry-pays-wages-in-digital-rubles-for-first-time?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-10-04T07:18:00+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "'We Have Identified You, Sir': Near Intents Recovers $3.8 Million After 48-Hour Ultimatum",
+    "summary": "Near Intents said the roughly $3.8 million drained in an exploit on Thursday was returned in full, a day after the team said it had identified the attacker and gave them 48 hours to return the funds.",
+    "link": "https://decrypt.co/380014/near-intents-recovers-3-8-million-after-48-hour-ultimatum",
+    "published": "2026-10-04T13:01:03+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Chainalysis Used AI to Trace the $387M Bitget Hack Back to North Korea",
+    "summary": "The firm says the Sept. 24 breach pushed North Korea's 2026 crypto haul past $1 billion, and detailed how it used in-house AI to trace the stolen funds across four blockchains in a race against the attackers.",
+    "link": "https://decrypt.co/380005/chainalysis-ai-87m-bitget-hack-north-korea",
+    "published": "2026-10-03T17:01:03+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "OpenAI Banned PewDiePie Twice While He Built Ajax, an Uncensored AI That Will Run on Your PC",
+    "summary": "The YouTuber says OpenAI suspended his account twice while he trained a small, uncensored model built to run on your own computer.",
+    "link": "https://decrypt.co/380001/openai-banned-pewdiepie-twice-ajax-uncensored-ai",
+    "published": "2026-10-03T16:01:03+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Trump Is Hosting Yet Another Meme Coin Dinner: Here Are the Details",
+    "summary": "The TRUMP meme coin project is inviting its top 185 holders to a Nov. 22 gala dinner with President Trump two weeks after ethics disputes over his crypto interests helped stall the Clarity Act in the Senate.",
+    "link": "https://decrypt.co/380002/trump-third-meme-coin-dinner-details",
+    "published": "2026-10-03T15:01:03+00:00"
+  },
+  {
+    "severity": 1,
+    "category": "other",
+    "source": "CNBC Finance",
+    "tier": "macro",
+    "weight": 1.2,
+    "title": "Sports betting is increasingly the norm for Gen Z.  Here’s why some financial and mental health experts are worried",
+    "summary": "Surveys show Gen Z increasingly views sports bets as a form of investment, and those who gamble too often face mental health risks.",
+    "link": "https://www.cnbc.com/2026/10/04/gen-z-sports-betting-financial-and-mental-health-risks.html",
+    "published": "2026-10-04T12:57:45+00:00"
+  }
+]
