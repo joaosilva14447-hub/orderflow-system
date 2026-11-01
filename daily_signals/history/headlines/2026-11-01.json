@@ -1,0 +1,200 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Crypto PACs made big Republican push in final weeks before November 3 election",
+    "summary": "",
+    "link": "https://www.coindesk.com/policy/2026/11/01/crypto-pacs-made-big-republican-push-in-final-weeks-before-november-3-election",
+    "published": "2026-11-01T14:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Sherrod Brown's Ohio edge threatens a rough go for crypto next year",
+    "summary": "",
+    "link": "https://www.coindesk.com/news-analysis/2026/11/01/sherrod-brown-s-ohio-edge-threatens-a-rough-go-for-crypto-next-year",
+    "published": "2026-11-01T13:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Binance opens crypto withdrawals in phases starting with bitcoin following $6.3 billion hack",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/11/01/binance-opens-crypto-withdrawals-in-phases-starting-with-bitcoin-following-usd6-3-billion-hack",
+    "published": "2026-11-01T10:35:42+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "FBI confirms North Korea's role in $6 billion Binance hack, asks DeFi community to block BTC, ETH, SOL addresses",
+    "summary": "",
+    "link": "https://www.coindesk.com/policy/2026/10/31/fbi-confirms-north-korea-s-role-in-usd6-billion-binance-hack-asks-defi-community-to-block-btc-eth-sol-addresses",
+    "published": "2026-11-01T01:10:05+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin's white paper turns 18, and small businesses are still paying for the bailouts it answered",
+    "summary": "",
+    "link": "https://www.coindesk.com/opinion/2026/10/31/bitcoin-s-white-paper-turns-18-and-small-businesses-are-still-paying-for-the-bailouts-it-answered",
+    "published": "2026-10-31T18:00:00+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "A stolen iPhone, $14,000 in losses and London's crypto theft problem",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/11/01/a-stolen-iphone-usd14-000-in-losses-and-london-s-crypto-theft-problem",
+    "published": "2026-10-31T16:09:30+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Traders are already placing leveraged bets on Anthropic’s IPO using crypto contracts",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/31/traders-are-already-placing-leveraged-bets-on-anthropic-s-ipo-using-crypto-contracts",
+    "published": "2026-10-31T16:00:00+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Binance says it has replaced 90% of stolen crypto after massive $6.3 billion breach",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/31/binance-says-it-has-replaced-90-of-stolen-crypto-after-massive-usd6-3-billion-breach",
+    "published": "2026-10-31T15:24:10+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Institutions embrace crypto staking despite shrinking yields",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/10/26/institutions-embrace-crypto-staking-despite-shrinking-yields",
+    "published": "2026-10-31T15:00:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Here’s what happened in crypto today",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Here’s what happened in crypto today\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/article-covers-110589-what-happened-in-crypto-today.jpg\" /></p><p>Need to know what happened in crypto today? Here is the latest news on daily trends and events impacting Bitcoin price, blockchain, DeFi, Web3",
+    "link": "https://cointelegraph.com/news/what-happened-in-crypto-today?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-01T14:17:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "DeepSeek developing AI agent requiring less human input: Report",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"DeepSeek developing AI agent requiring less human input: Report  \" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M6BNBCY09X57GCM10X7FBK0P/make-ai-great1-1.jpg\" /></p><p>The proposal comes amid intense competition among AI developers, including US companies Anthropic and OpenAI, the",
+    "link": "https://cointelegraph.com/news/deepseek-developing-ai-agent-requiring-less-human-input-report?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-01T13:40:33+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Binance says phase one of withdrawals opens after $6.3B hack",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Binance says phase one of withdrawals opens after $6.3B hack\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M6B7GCDKCRNR2Z23KSY172H6/hi-binance-unchained.jpg\" /></p><p>The crypto exchange said it has begun phased withdrawals after the record hack the FBI has blamed on North Korea.</",
+    "link": "https://cointelegraph.com/news/binance-says-phase-one-of-withdrawals-opens-after-63b-hack?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-01T09:38:18+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "FBI blames North Korea for record $6.3B Binance hack",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"FBI blames North Korea for record $6.3B Binance hack\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M6B0XQQ2RWMNW96K4XFZN2DN/kimjong-unnorth-korea.jpg\" /></p><p>US agency seeks private-sector help to block further money-laundering of stolen digital assets.</p>",
+    "link": "https://cointelegraph.com/news/fbi-blames-north-korea-for-record-63b-binance-hack?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-01T07:44:38+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Binance says 90% of stolen assets replenished, targets Sunday withdrawals",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Binance says 90% of stolen assets replenished, targets Sunday withdrawals\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M699FRTD1VV81MBCZE1W7405/binance-robot-hands.png\" /></p><p>Less-liquid tokens make up the remaining shortfall as Binance continues buying replacement assets throu",
+    "link": "https://cointelegraph.com/news/binance-hack-90-percent-replenished?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-10-31T15:36:01+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin held up better than expected after Binance hack, Strive CEO says",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Bitcoin held up better than expected after Binance hack, Strive CEO says\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M6784E305ZRSTBDYV0WKG4RR/hi-true-or-false-91-of-surveys-about-bitcoin-and-crypto-are-totally-wrong.png\" /></p><p>Strive CEO Matt Cole says the Binance hack has not",
+    "link": "https://cointelegraph.com/markets/bitcoin-binance-hack-strive-ceo?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-10-31T15:26:46+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Hackers hijack a dozen DeFi websites, all registered with Name.com, and steal about $138,000",
+    "summary": "All 12 hijacked domains are registered through Name.com, according to registry records accessed by The Block, suggesting a compromise.",
+    "link": "https://www.theblock.co/news/defi/2026-10-31-hackers-hijack-a-dozen-defi-websites-all-registered-with-name-com-and-steal-about-138000-432251",
+    "published": "2026-10-31T15:26:27+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "How to Run an AI Model Locally—And Why You Might Want To",
+    "summary": "Free tools like Ollama and LM Studio can run open-weight AI models on your laptop, offline, and without a subscription. Here's how to get started.",
+    "link": "https://decrypt.co/382295/how-to-run-ai-model-locally-why-you-might-want",
+    "published": "2026-11-01T14:01:02+00:00"
+  },
+  {
+    "severity": 3,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Binance Hack: Everything You Need to Know About the Biggest Crypto Heist in History",
+    "summary": "Attackers tied to North Korea drained roughly $6.4 billion from the world’s largest crypto exchange. Here’s what we know about how it happened, who’s behind it, and what comes next.",
+    "link": "https://decrypt.co/382306/binance-hack-everything-you-need-to-know",
+    "published": "2026-10-31T15:01:02+00:00"
+  }
+]
