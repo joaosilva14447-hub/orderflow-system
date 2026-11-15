@@ -1,0 +1,200 @@
+[
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Crypto insiders aren't counting on silver linings in Congress' 'lame duck' session",
+    "summary": "",
+    "link": "https://www.coindesk.com/news-analysis/2026/11/13/crypto-insiders-aren-t-counting-on-silver-linings-in-congress-lame-duck-session",
+    "published": "2026-11-15T14:00:00+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "XRP crashes to its lowest since November 2024 as money leaves crypto",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/11/15/xrp-crashes-to-its-lowest-since-november-2024-as-money-leaves-crypto",
+    "published": "2026-11-15T02:50:57+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin crashes to 3-month low below $63,000 as analyst flags fourth capitulation wave",
+    "summary": "",
+    "link": "https://www.coindesk.com/markets/2026/11/14/bitcoin-drifts-back-to-usd65-000-deep-value-zone-says-analyst",
+    "published": "2026-11-14T16:33:29+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Ethereum scaling project MegaETH slashes staff by 20% as it pursues AI business",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/11/14/ethereum-scaling-project-megaeth-slashes-staff-by-20-as-it-pursues-ai-business",
+    "published": "2026-11-14T16:33:23+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CoinDesk",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Kazakhstan plans tokenized government bonds in first quarter after $22 million note sale",
+    "summary": "",
+    "link": "https://www.coindesk.com/business/2026/11/14/kazakhstan-plans-tokenized-government-bonds-in-first-quarter-after-usd22-million-note-sale",
+    "published": "2026-11-14T15:38:27+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Enterprise blockchain is going to come back from the dead",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Enterprise blockchain is going to come back from the dead\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M6ZMF6J25WASD4RQJDF0BRKT/hi-if-blockchain-is-the-door-to-the-future-of-finance-liquidity-is-the-key.jpg\" /></p><p>With scalability, privacy tools and onchain liquidity improving,",
+    "link": "https://cointelegraph.com/opinion/enterprise-blockchain-come-back-from-dead?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-15T14:30:00+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Here’s what happened in crypto today",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Here’s what happened in crypto today\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/article-covers-110589-what-happened-in-crypto-today.jpg\" /></p><p>Need to know what happened in crypto today? Here is the latest news on daily trends and events impacting Bitcoin price, blockchain, DeFi, Web3",
+    "link": "https://cointelegraph.com/news/what-happened-in-crypto-today?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-15T11:18:48+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin falls to four-month low near $62K as crypto selloff deepens",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Bitcoin falls to four-month low near $62K as crypto selloff deepens\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M7FBMZXNH6CNG3W9M8RNBHCN/hi-meet-the-trader-who-lost-bitcoin-bear-market.jpg\" /></p><p>The global cryptocurrency market capitalization fell 4% to $2.26 trillion over 24",
+    "link": "https://cointelegraph.com/markets/bitcoin-four-month-low-62k-crypto-market-selloff?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-15T10:23:17+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Coinone warns of phishing, identity theft after customer data breach",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"Coinone warns of phishing, identity theft after customer data breach\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/11/01M7F3YVA7631KKAGKFRGDJWMH/coinone.png\" /></p><p>The South Korean crypto exchange said potentially exposed information includes passwords, bank account numbers, national",
+    "link": "https://cointelegraph.com/news/coinone-data-breach-phishing-identity-theft-customer-information?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-15T08:07:58+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Cointelegraph",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "RWA protocol stUSDT winds down three years after $2.3B TVL peak",
+    "summary": "<p style=\"float: right; margin: 0 0 10px 15px; width: 240px;\"><img alt=\"RWA protocol stUSDT winds down three years after $2.3B TVL peak\" class=\"type:primaryImage\" src=\"https://s3-images.ctmedia.io/media/article-covers/2026/10/01M4STR9GPNQXV18RZ1XBHZJV9/hi-coinflares-exit-and-the-future-of-cloud-mining-3.jpg\" /></p><p>The stUSDT team did not disclose a reason for winding down the RWA protocol but a",
+    "link": "https://cointelegraph.com/news/rwa-protocol-stusdt-winds-down-three-years-after-23b-tvl-peak?utm_source=rss_feed&utm_medium=rss&utm_campaign=rss_partner_inbound",
+    "published": "2026-11-15T06:27:26+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Kava Lend loses roughly $3.8 million to hack, sending KAVA token down nearly 40%",
+    "summary": "About 49.2 million KAVA was bridged to BNB Chain via LayerZero and sold for roughly $2.1 million in BNB and USDT.",
+    "link": "https://www.theblock.co/news/defi/2026-11-14-kava-lend-loses-roughly-3-8-million-to-hack-sending-kava-token-down-nearly-40-440350",
+    "published": "2026-11-14T23:07:35+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Louisiana AG calls CFTC chair an ‘obsequious standard bearer’ for prediction markets following agency lawsuit",
+    "summary": "The CFTC sued Louisiana Friday to block a state judge's order banning 31 prediction markets, including Kalshi and Polymarket, in the state.",
+    "link": "https://www.theblock.co/news/regulation/2026-11-14-louisiana-ag-calls-cftc-chair-an-obsequious-standard-bearer-for-prediction-markets-following-agency-lawsuit-440342",
+    "published": "2026-11-14T19:06:59+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "The Block",
+    "tier": "crypto",
+    "weight": 1.0,
+    "title": "Bitcoin ETFs lose $1 billion for the second week in a row as crypto funds, except one, continue bleeding",
+    "summary": "U.S. spot crypto ETFs lost about $1.55 billion combined, and Avalanche funds' $227,000 was the only weekly inflow among the 15 categories SoSoValue tracks.",
+    "link": "https://www.theblock.co/news/markets/2026-11-14-bitcoin-etfs-lose-1-billion-for-the-second-week-in-a-row-as-crypto-funds-except-one-continue-bleeding-440337",
+    "published": "2026-11-14T17:50:41+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "Bitcoin ETFs Lose $2.1 Billion in November as Outflow Streak Hits Seven Days",
+    "summary": "Spot Bitcoin ETFs shed $185.4 million on Friday, their seventh straight day of outflows, pushing November losses to about $2.1 billion as Bitcoin fell toward $64,000.",
+    "link": "https://decrypt.co/383282/bitcoin-etfs-lose-2-1-billion-november-outflow-streak-seven-days",
+    "published": "2026-11-15T14:01:02+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "The Week Jensen Huang Fell: How a Spy Scandal Toppled Nvidia’s CEO",
+    "summary": "In a matter of days, the executive synonymous with the AI boom resigned after 33 years amid reports of affairs and suspected Chinese intelligence ties—sending Nvidia’s stock reeling and leaving the chipmaker leaderless.",
+    "link": "https://decrypt.co/383280/the-week-jensen-huang-fell-how-spy-scandal-toppled-nvidia-ceo",
+    "published": "2026-11-14T18:01:02+00:00"
+  },
+  {
+    "severity": 2,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "OpenAI, Anthropic, Google and Other AI Giants Face Lawsuit Demanding Development Freeze",
+    "summary": "Four nonprofit advocacy groups want a California court to stop major AI developers from building stronger models, alleging their technology could cause catastrophic harm worldwide.",
+    "link": "https://decrypt.co/383270/openai-anthropic-google-ai-giants-lawsuit-development-freeze",
+    "published": "2026-11-14T17:01:02+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "Decrypt",
+    "tier": "crypto",
+    "weight": 0.8,
+    "title": "What Is Canton Network? The Privacy Blockchain Built for Wall Street",
+    "summary": "Canton Network is a privacy-enabled blockchain built for banks and tokenized assets. Here's how it works and what Canton Coin (CC) does.",
+    "link": "https://decrypt.co/resources/what-is-canton-network-the-privacy-blockchain-built-for-wall-street",
+    "published": "2026-11-14T16:01:02+00:00"
+  },
+  {
+    "severity": 0,
+    "category": "other",
+    "source": "CNBC Finance",
+    "tier": "macro",
+    "weight": 1.2,
+    "title": "How Nvidia turmoil and a Democratic Congress could reshape the AI trade, according to ETF experts",
+    "summary": "ETF experts say Nvidia’s leadership turmoil and Democratic control of Congress could shift AI demand to the benefit of other Big Tech stocks, rival chipmakers.",
+    "link": "https://www.cnbc.com/2026/11/14/nvidia-ai-trade-data-centers-congress.html",
+    "published": "2026-11-14T15:50:43+00:00"
+  }
+]
